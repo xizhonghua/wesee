@@ -9,10 +9,18 @@ usage: ./matting [-e] [-m filename] [-t filename] [-ta input_dir] [input_dir]
 
 
 examples:
-	./matting -e -m test/00037.jpg 		#mat single image and evaluate with ground truth
-	./matting -e test					#mat all images in "test" folder and evaluate with ground truth
-	./matting input_dir					#mat all images in "input_dir" folder and save output to files
+	./matting -e -m test/00037.jpg
+	#mat single image and evaluate with ground truth
+	 		
+	./matting -e test					
+	#mat all images in "test" folder and evaluate with ground truth
 	
-	./matting -t training/000301.jpg 	#train single image
-	./matting -ta training 				#train all images in "training" folder
+	./matting input_dir
+	#mat all images in "input_dir" folder and save output to files
+	
+	./matting -t training/000301.jpg
+	#train single image
+	
+	./matting -ta training
+	#train all images in "training" folder
 	

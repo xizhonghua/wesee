@@ -48,10 +48,14 @@ endif
 #--------------------------------------------------------------------
 # OpenCV
 #--------------------------------------------------------------------
+CV_LIB_BASE = -lopencv_core -lopencv_highgui -lopencv_imgproc
 ifeq ($(PLATFORM),MAC_OS_X)
-   CV_INCL = -I/opt/local/include
+    CV_INCL = -I/opt/local/include
+    CV_LIB = -L/opt/local/lib $(CV_LIB_BASE)
+else
+	CV_LIB = $(CV_LIB_BASE)
 endif
-CV_LIB = -lopencv_core -lopencv_highgui -lopencv_imgproc
+
 
 
 #--------------------------------------------------------------------
@@ -81,7 +85,7 @@ MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 
 #--------------------------------------------------------------------
 INCLUDE = -I. $(MT_INCL) -I$(LIB_DIR) $(CV_INCL)
-LIB = -lm  $(GL_LIB) $(CV_LIB)
+LIB = -lm $(GL_LIB) $(CV_LIB)
 
 #--------------------------------------------------------------------
 

@@ -42,6 +42,38 @@ int Matting::mat(const Mat& image, Mat& out) {
 	return 1;
 }
 
+double Matting::evaluate(const Mat& ground_truth, const Mat& result){
+	const Mat& g = ground_truth;
+	const Mat& r = result;
+
+	if(g.rows != r.rows || g.cols != r.cols){
+		cout<<"! Warning ! size doesn't match"
+			<<" groud_truth = "<<g.rows<<"x"<<g.cols
+			<<" result = "<<r.rows<<"x"<<r.cols;
+		return 0.0;
+	}
+
+	int inter_count = 0;
+	int union_count = 0;
+
+	for(int i=0; i<g.rows; i++)
+		for(int j=0; j<g.cols; j++)
+		    {
+		    	unsigned char r_g = g.at<int>(i,j);
+		    	unsigned char r_r = r.at<cv::Vec3b>(i,j)[0]; // only use red channel now
+
+		    	// TODO
+		    	if(r_g == 0 && r_r > 128) inter_count++;
+		    	if(r_g == 0 || r_r > 120) union_count++;
+		    }
+
+	if(union_count == 0) return 0.0;
+
+	double p = (double)inter_count/union_count;
+
+	return p;
+}
+
 
 // ==============================================
 // static method

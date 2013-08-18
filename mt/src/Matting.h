@@ -17,7 +17,11 @@ public:
 	virtual ~Matting();
 	int train(const Mat& image, const Mat& profile);
 	int mat(const Mat& image, Mat& output);
+	// ================================================
+	// static method
+	// ================================================
 	static void dump_training_results();
+	static double evaluate(const Mat& ground_truth, const Mat& result);
 };
 
 #endif /* MATTING_H_ */

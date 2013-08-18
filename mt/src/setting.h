@@ -11,6 +11,7 @@ public:
 	string input_dir;
 	string training_dir;
 	bool enable_gui = true;
+	bool enable_evaluation = false;
 	bool matting_mode = false;
 	bool training_mode = false;
 	bool training_batch_mode = false;

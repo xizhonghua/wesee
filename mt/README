@@ -1,1 +1,6 @@
 repository for matting
+
+Usage: ./matting input_dir
+
+Matting will list all jpg files under input_dir and extract human out from the image. 
+Result will be saved to ./input_filename-profile.jpg

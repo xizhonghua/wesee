@@ -14,7 +14,7 @@ using namespace std;
 #include <Matting.h>
 
 void print_usage(int argc, char** argv){
-	cout<<argv[0]<<" input_dir"<<endl;
+	cout<<"usage: "<<argv[0]<<" input_dir"<<endl;
 }
 
 vector<string> get_files(const char* input_dir){

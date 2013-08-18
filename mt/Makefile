@@ -33,17 +33,15 @@ else
   endif
 endif
 
-#-----------------------------------------------------------------------------
+#--------------------------------------------------------------------------
 # Choose a compiler & its options
 #--------------------------------------------------------------------------
-g++ = g++
 CXX = g++
 
 ifeq ($(PLATFORM),MAC_OS_X)
   OPTS = -pipe -O3 -MMD  -DMACOS -Wreturn-type -std=gnu++0x
 else 
   OPTS = -pipe -O3 -MMD -std=gnu++0x
-  #OPTS = -pipe -g -O0 -MMD -std=gnu++0x
 endif
 
 
@@ -51,7 +49,7 @@ endif
 # Code structure 
 #--------------------------------------------------------------------
 
-MT_SUB_DIRS = $(SRC_DIR)/
+MT_SUB_DIRS = $(SRC_DIR)
 
 #MP_SUB_DIRS = $(SRC_DIR)/mathtool \
               $(SRC_DIR)/mtrand \

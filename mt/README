@@ -1,6 +1,18 @@
 repository for matting
 
-Usage: ./matting input_dir
+usage: ./matting [-e] [-m filename] [-t filename] [-ta input_dir] [input_dir]
+	-e enable evaluation, will NOT save result to file
+	-m filename: mat single image
+	-t filename: train single image
+	-ta input_dir: train entire directory
+	input_dir: mat entire directory
 
-Matting will list all jpg files under input_dir and extract human out from the image. 
-Result will be saved to ./input_filename-profile.jpg
+
+examples:
+	./matting -e -m test/00037.jpg 		#mat single image and evaluate with ground truth
+	./matting -e test					#mat all images in "test" folder and evaluate with ground truth
+	./matting input_dir					#mat all images in "input_dir" folder and save output to files
+	
+	./matting -t training/000301.jpg 	#train single image
+	./matting -ta training 				#train all images in "training" folder
+	

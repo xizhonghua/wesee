@@ -1,0 +1,6 @@
+/Dependencies
+/matting
+*.o
+.project
+.cproject
+.settings

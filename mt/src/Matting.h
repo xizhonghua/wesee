@@ -15,7 +15,9 @@ class Matting {
 public:
 	Matting();
 	virtual ~Matting();
+	int train(const Mat& image, const Mat& profile);
 	int mat(const Mat& image, Mat& output);
+	static void dump_training_results();
 };
 
 #endif /* MATTING_H_ */

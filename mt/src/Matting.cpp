@@ -5,6 +5,9 @@
  *      Author: zhonghua
  */
 
+#include <iostream>
+using namespace std;
+
 #include "Matting.h"
 
 Matting::Matting() {
@@ -14,6 +17,10 @@ Matting::Matting() {
 
 Matting::~Matting() {
 	// TODO Auto-generated destructor stub
+}
+
+int Matting::train(const Mat& image, const Mat& profile){
+	return 0;
 }
 
 int Matting::mat(const Mat& image, Mat& out) {
@@ -33,4 +40,13 @@ int Matting::mat(const Mat& image, Mat& out) {
 	    }
 
 	return 1;
+}
+
+
+// ==============================================
+// static method
+// ==============================================
+void Matting::dump_training_results(){
+	//TODO dump training results
+	cout<<"TODO dump training results"<<endl;
 }

@@ -13,19 +13,21 @@ using namespace std;
 #include "Image.h"
 #include "Matting.h"
 #include "Timer.h"
+#include "setting.h"
 
 bool parse_arg(int argc, char** argv);
 void print_usage(int argc, char** argv);
 
+string get_training_profile_name(const string& input);
+
 vector<string> get_files(const string& input_dir);
 
 bool matting(const string& input, const string& output, Mat* min, Mat* out);
+bool training(const string& input, const string& profile);
 void run_batch(const string& input_dir);
+void train_batch(const string& input_dir);
 
 
-
-string g_filename;
-string g_input_dir;
-bool enable_gui = true;
+setting g_setting;
 
 #endif /* __MAIN_H__ */

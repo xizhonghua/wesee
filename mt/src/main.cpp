@@ -54,21 +54,56 @@ vector<string> get_files(const string& input_dir){
 	return files;
 }
 
+bool matting(const string& input, const string& output, Mat* min, Mat* mout)
+{
+	Timer t;
+	Matting M;
+
+	double read_file_cost, matting_cost, write_file_cost;
+
+	t.restart();
+
+	*min = imread(input, CV_LOAD_IMAGE_COLOR);   // Read the file
+
+	read_file_cost = t.getElapsedMilliseconds();
+
+	if(! min->data )                              // Check for invalid input
+	{
+		cout << " ! Error ! Could not open or find the image" << std::endl ;
+		return false;
+	}
+
+	t.restart();
+
+	M.mat(*min, *mout);	// do matting
+
+	matting_cost = t.getElapsedMilliseconds();
+
+	t.restart();
+
+	imwrite(output, *mout);
+
+	write_file_cost = t.getElapsedMilliseconds();
+
+	cout<<"Matting "<<input<<" to "<<output
+		<<" size = "<<min->rows<<"x"<<min->cols
+		<<" read = "<<read_file_cost<<"ms"<<" mat =  "<<matting_cost<<"ms write = "<<write_file_cost<<"ms"<<endl;
+
+	return true;
+}
+
 void run_batch(const string& input_dir)
 {
 	vector<string> files = get_files(input_dir);
 
+	Mat min, mout;
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
-		const string& filename = *it;
+		const string& filename = input_dir + "/" + *it;
 		string output_filename = filename.substr(0, filename.find_last_of('.')) + "-profile.jpg";
 		string training_filename = input_dir + "/" + output_filename;
 
-		Matting M;
-		Mat min, mout;
-		M.mat(min, mout);
-
-		cout<<"input = "<<filename<<" | training = " << training_filename << " | output =  "<<output_filename<<endl;
+		matting(filename, output_filename, &min, &mout);
 	}
 }
 
@@ -86,19 +121,20 @@ int main(int argc, char** argv){
 	}
 	else
 	{
-		Mat image;
-		image = imread(g_filename, CV_LOAD_IMAGE_COLOR);   // Read the file
+		Mat min, mout;
 
-		if(! image.data )                              // Check for invalid input
+		if(matting(g_filename, g_filename + "-p.jpg", &min, &mout))
 		{
-			cout <<  "Could not open or find the image" << std::endl ;
-			return -1;
+			float ratio = (float)mout.rows / mout.cols;
+			int rows = mout.rows > 600 ? 600 : mout.rows;
+			int cols = rows/ratio;
+			cv::Mat image;
+			cv::resize(mout,image, Size(), (float)rows/mout.rows, (float)cols/mout.cols);
+			cv::namedWindow( g_filename.c_str(), CV_WINDOW_AUTOSIZE );
+			cv::imshow( g_filename.c_str(), image );
+
+			waitKey(0);                                          // Wait for a keystroke in the window
 		}
-
-		namedWindow( "Display window", CV_WINDOW_AUTOSIZE );// Create a window for display.
-		imshow( "Display window", image );                   // Show our image inside it.
-
-		waitKey(0);                                          // Wait for a keystroke in the window
 	}
 
 	return 0;

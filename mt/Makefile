@@ -56,10 +56,17 @@ else
 endif
 
 #--------------------------------------------------------------------
+# OpenCV
+#--------------------------------------------------------------------
+CV_LIB = -lopencv_core -lopencv_highgui -lopencv_imgproc
+
+
+#--------------------------------------------------------------------
 # Code structure 
 #--------------------------------------------------------------------
 
-MT_SUB_DIRS = $(SRC_DIR)
+MT_SUB_DIRS = $(SRC_DIR) \
+			$(SRC_DIR)/utils
 
 #MP_SUB_DIRS = $(SRC_DIR)/mathtool \
               $(SRC_DIR)/mtrand \
@@ -81,7 +88,7 @@ MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 
 #--------------------------------------------------------------------
 INCLUDE = -I. $(MT_INCL) -I$(LIB_DIR) $(GL_INCL)
-LIB = -lm -lopencv_core -lopencv_highgui $(GL_LIB)
+LIB = -lm  $(GL_LIB) $(CV_LIB)
 
 #--------------------------------------------------------------------
 

@@ -12,12 +12,16 @@ using namespace std;
 
 #include "Image.h"
 #include "Matting.h"
+#include "Timer.h"
 
 bool parse_arg(int argc, char** argv);
 void print_usage(int argc, char** argv);
 
 vector<string> get_files(const string& input_dir);
+
+bool matting(const string& input, const string& output, Mat* min, Mat* out);
 void run_batch(const string& input_dir);
+
 
 
 string g_filename;

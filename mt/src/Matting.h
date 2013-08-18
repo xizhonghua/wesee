@@ -8,11 +8,14 @@
 #ifndef MATTING_H_
 #define MATTING_H_
 
+#include <opencv2/core/core.hpp>
+using namespace cv;
+
 class Matting {
 public:
 	Matting();
 	virtual ~Matting();
-	int mat();
+	int mat(const Mat& image, Mat& output);
 };
 
 #endif /* MATTING_H_ */

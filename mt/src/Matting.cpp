@@ -16,7 +16,8 @@ Matting::~Matting() {
 	// TODO Auto-generated destructor stub
 }
 
-int Matting::mat() {
+int Matting::mat(const Mat& image, Mat& output) {
 	// TODO implement matting algorithm
+
 	return 1;
 }

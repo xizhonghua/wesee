@@ -44,6 +44,16 @@ else
   OPTS = -pipe -O3 -MMD -std=gnu++0x
 endif
 
+#--------------------------------------------------------------------
+# Xlib and OpenGL
+#--------------------------------------------------------------------
+
+ifeq ($(PLATFORM),MAC_OS_X)
+   GL_INCL = -I/opt/local/include
+   GL_LIB = -L/opt/local/lib -framework OpenGL -framework GLUT -framework Foundation
+else
+   GL_LIB = -lglui -lGL -lGLU -lglut
+endif
 
 #--------------------------------------------------------------------
 # Code structure 
@@ -70,8 +80,8 @@ MT_SUB_DIRS = $(SRC_DIR)
 MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 
 #--------------------------------------------------------------------
-INCLUDE = $(MT_INCL) -I.
-LIB = -lm
+INCLUDE = -I. $(MT_INCL) -I$(LIB_DIR) $(GL_INCL)
+LIB = -lm -lopencv_core -lopencv_highgui $(GL_LIB)
 
 #--------------------------------------------------------------------
 

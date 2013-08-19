@@ -44,6 +44,15 @@ else
   OPTS = -pipe -O3 -MMD -std=gnu++0x
 endif
 
+#--------------------------------------------------------------------
+# OpenGL
+#--------------------------------------------------------------------
+ifeq ($(PLATFORM),MAC_OS_X)
+	GL_LIB = -framework OpenGL -framework GLUT -framework Foundation
+else
+    #X_LIB  = -Wl,-rpath,/usr/X11R6/lib -L/usr/X11R6/lib -L/usr/local/lib -lXext -lX11 -lXt 
+    GL_LIB = -lglut -lGLU -lGL -lm
+endif
 
 #--------------------------------------------------------------------
 # OpenCV
@@ -63,7 +72,9 @@ endif
 #--------------------------------------------------------------------
 
 MT_SUB_DIRS = $(SRC_DIR) \
-			$(SRC_DIR)/utils
+			$(SRC_DIR)/utils \
+			$(SRC_DIR)/graphcut \
+			$(SRC_DIR)/graphcut/graph \
 
 #MP_SUB_DIRS = $(SRC_DIR)/mathtool \
               $(SRC_DIR)/mtrand \
@@ -84,8 +95,8 @@ MT_SUB_DIRS = $(SRC_DIR) \
 MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 
 #--------------------------------------------------------------------
-INCLUDE = -I. $(MT_INCL) -I$(LIB_DIR) $(CV_INCL)
-LIB = -lm $(GL_LIB) $(CV_LIB)
+INCLUDE = -I. $(MT_INCL) -I$(LIB_DIR) $(CV_INCL) $(GL_INCL)
+LIB = -lm $(GL_LIB) $(CV_LIB) $(GL_LIB)
 
 #--------------------------------------------------------------------
 

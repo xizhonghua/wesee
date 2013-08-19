@@ -10,7 +10,6 @@ using namespace std;
 
 #include <opencv2/highgui/highgui.hpp>
 
-#include "Image.h"
 #include "Matting.h"
 #include "Timer.h"
 #include "setting.h"

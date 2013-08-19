@@ -391,3 +391,19 @@ void GrabCut::buildImages()
 		}
 	}
 }
+
+void GrabCut::getSegmentationResult(Mat *image){
+
+	*image = Mat(m_h, m_w, CV_8UC1);
+
+	for (unsigned int y = 0; y < m_h; ++y)
+		{
+			for (unsigned int x = 0; x < m_w; ++x)
+			{
+				if ((*m_hardSegmentation)(x,y) == SegmentationForeground)
+					image->at<unsigned char>(m_h - y - 1, x) = 0xFF;
+				else
+					image->at<unsigned char>(m_h - y - 1, x) = 0;
+			}
+		}
+}

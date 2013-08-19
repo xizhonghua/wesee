@@ -8,11 +8,18 @@
 #ifndef GRAB_CUT_H
 #define GRAB_CUT_H
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+using namespace cv;
+using namespace std;
+
 #include "Image.h"
 #include "Color.h"
 #include "GMM.h"
 
 #include "graph.h"
+
 
 typedef Graph<double, double, double> GraphType;
 
@@ -39,6 +46,9 @@ public:
 	//OpenGL display routine
 	void display( int t );
 	void overlayAlpha();
+
+	// put the segementation result(0,1) to opencv mat (height*weight)
+	void getSegmentationResult( Mat *image);
 
 private:
 

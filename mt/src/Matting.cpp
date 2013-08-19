@@ -50,21 +50,21 @@ double Matting::evaluate(const Mat& ground_truth, const Mat& result){
 		cout<<"! Warning ! size doesn't match"
 			<<" groud_truth = "<<g.rows<<"x"<<g.cols
 			<<" result = "<<r.rows<<"x"<<r.cols;
-		return 0.0;
 	}
+
+	int min_rows = std::min(g.rows, r.rows);
+	int min_cols = std::min(g.cols, r.cols);
 
 	int inter_count = 0;
 	int union_count = 0;
 
-	for(int i=0; i<g.rows; i++)
-		for(int j=0; j<g.cols; j++)
+	for(int i=0; i<min_rows; i++)
+		for(int j=0; j<min_cols; j++)
 		    {
-		    	unsigned char r_g = g.at<int>(i,j);
-		    	unsigned char r_r = r.at<cv::Vec3b>(i,j)[0]; // only use red channel now
-
-		    	// TODO
-		    	if(r_g == 0 && r_r > 128) inter_count++;
-		    	if(r_g == 0 || r_r > 120) union_count++;
+		    	unsigned char r_g = g.at<cv::Vec4b>(i,j)[3];
+		    	unsigned char r_r = r.at<unsigned char>(i,j);
+		    	if(r_g == 255 && r_r == 255) inter_count++;
+		    	if(r_g == 255 || r_r == 255) union_count++;
 		    }
 
 	if(union_count == 0) return 0.0;

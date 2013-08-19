@@ -59,6 +59,7 @@ Image<Color>* load( std::string file_name )
 		return NULL;
 	}
 }
+
 Image<Color>* loadForOCV(std::string file_name)
 {
 	Mat out = imread(file_name.c_str(), CV_LOAD_IMAGE_COLOR);   // Read the file

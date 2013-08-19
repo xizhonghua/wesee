@@ -49,8 +49,7 @@ endif
 #--------------------------------------------------------------------
 ifeq ($(PLATFORM),MAC_OS_X)
 	GL_LIB = -framework OpenGL -framework GLUT -framework Foundation
-else
-    #X_LIB  = -Wl,-rpath,/usr/X11R6/lib -L/usr/X11R6/lib -L/usr/local/lib -lXext -lX11 -lXt 
+else 
     GL_LIB = -lglut -lGLU -lGL -lm
 endif
 
@@ -75,22 +74,6 @@ MT_SUB_DIRS = $(SRC_DIR) \
 			$(SRC_DIR)/utils \
 			$(SRC_DIR)/graphcut \
 			$(SRC_DIR)/graphcut/graph \
-
-#MP_SUB_DIRS = $(SRC_DIR)/mathtool \
-              $(SRC_DIR)/mtrand \
-              $(SRC_DIR)/graph \
-              $(SRC_DIR)/loader \
-              $(SRC_DIR)/collisionprediction \
-			  $(SRC_DIR)/old-collisionpredict \
-              $(SRC_DIR)/OBB \
-              $(SRC_DIR)/acd2d $(SRC_DIR)/acd2d/edge_visibility $(SRC_DIR)/acd2d/hull \
-              $(SRC_DIR)/Eigen-src \
-              $(SRC_DIR) \
-              $(SRC_DIR)/nlopt \
-              tmmp \
-              sampler/GL \
-              sampler \
-              
 
 MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 

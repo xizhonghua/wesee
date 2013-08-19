@@ -25,6 +25,10 @@ bool showMask = false;
 int displayType = 0;
 int edits = 0;
 
+
+// used to evaluation
+Mat img_ground_truth;
+
 void init()
 {
 	//set the background color to black (RGBA)
@@ -163,6 +167,38 @@ void motion(int x, int y)
 	}
 }
 
+void evaluation(){
+	if(!img_ground_truth.data) {
+		cout<<"ground truth not found"<<endl;
+		return;
+	}
+
+	Mat seg;
+	gc->getSegmentationResult(&seg);
+
+	cout<<"seg result got "<<seg.rows<<"x"<<seg.cols<<endl;
+
+	Mat im;
+	cv::resize(seg, im, Size(), (float)img_ground_truth.rows / seg.rows, (float)img_ground_truth.cols/seg.cols);
+	cout<<"image enlarged to "<<im.rows<<"x"<<im.cols<<endl;
+
+	double score = Matting::evaluate(img_ground_truth, im);
+
+	Mat ground_truth_to_display;
+	cv::resize(img_ground_truth, ground_truth_to_display, Size(), (float)seg.rows/img_ground_truth.rows, (float)seg.cols/img_ground_truth.cols);
+	vector<Mat> ch;
+	split(ground_truth_to_display, ch);
+
+	cout<<"score = "<<score<<endl;
+
+	cv::namedWindow("seg result", CV_WINDOW_AUTOSIZE );
+	cv::imshow("seg result", seg);
+	cv::namedWindow("ground truth", CV_WINDOW_AUTOSIZE );
+	cv::imshow("ground truth", ch[3]);
+	//
+	cv::waitKey(2);
+}
+
 void keyboard(unsigned char key, int x, int y)
 {
 	y = displayImage->height() - y;
@@ -206,6 +242,10 @@ void keyboard(unsigned char key, int x, int y)
 	case 'l':
 		gc->fitGMMs();			// rerun the Orchard-Bowman GMM clustering
 		glutPostRedisplay();
+		break;
+
+	case 'e':					// evaluation
+		evaluation();
 		break;
 
 	case 27:
@@ -347,7 +387,7 @@ bool matting(const string& input, const string& output, Mat* min, Mat* mout, con
 
 		t.restart();
 
-		Mat img_ground_truth = imread(*ground_truth, CV_LOAD_IMAGE_COLOR);
+		img_ground_truth = imread(*ground_truth, CV_LOAD_IMAGE_COLOR);
 
 		read_file_cost = t.getElapsedMilliseconds();
 
@@ -471,20 +511,14 @@ int main(int argc, char** argv){
 
 		string profile_name = get_profile_name(g_setting.matting_filename);
 
-//		if(matting(g_setting.matting_filename, "tmp-matting.jpg", &min, &mout, &profile_name, &score))
-//		{
-//			float ratio = (float)mout.rows / mout.cols;
-//			int rows = mout.rows > 600 ? 600 : mout.rows;
-//			int cols = rows/ratio;
-//			cv::Mat image;
-//			cv::resize(mout,image, Size(), (float)rows/mout.rows, (float)cols/mout.cols);
-//			cv::namedWindow(g_setting.matting_filename.c_str(), CV_WINDOW_AUTOSIZE );
-//			cv::imshow( g_setting.matting_filename.c_str(), image );
-//
-//			waitKey(0);                                          // Wait for a keystroke in the window
-//		}
-
 		Image<Color>* image = loadForOCV( g_setting.matting_filename );
+
+		img_ground_truth = imread(profile_name, -1);
+
+		cout<<"ground truth:"
+			<<" dim = "<<img_ground_truth.dims
+			<<" channels = "<<img_ground_truth.channels()
+			<<" size = "<<img_ground_truth.size()<<endl;
 
 		if (image)
 		{
@@ -498,7 +532,7 @@ int main(int argc, char** argv){
 			glutInitWindowSize(displayImage->width(),displayImage->height());
 			glutInitWindowPosition(100,100);
 
-			glutCreateWindow("GrabCut - Justin Talbot");
+			glutCreateWindow("wesee - mt");
 
 			glOrtho(0,displayImage->width(),0,displayImage->height(),-1,1);
 

@@ -39,9 +39,9 @@ endif
 CXX = g++
 
 ifeq ($(PLATFORM),MAC_OS_X)
-  OPTS = -pipe -O3 -MMD  -DMACOS -Wreturn-type -std=gnu++0x
+  OPTS = -pipe -O3 -MMD -DMACOS -Wreturn-type -std=gnu++0x -Wwrite-strings
 else 
-  OPTS = -pipe -O3 -MMD -std=gnu++0x
+  OPTS = -pipe -O3 -MMD -std=gnu++0x -Wwrite-strings
 endif
 
 #--------------------------------------------------------------------

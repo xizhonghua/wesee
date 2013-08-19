@@ -6,6 +6,219 @@
  */
 #include "main.h"
 
+#include "Global.h"
+#include "GrabCut.h"
+
+#include <stdlib.h>
+
+Image<Color> *displayImage;
+GrabCut* gc = NULL;
+
+// Some state variables for the UI
+Real xstart, ystart, xend, yend;
+bool box = false;
+bool initialized = false;
+bool is_left = false;
+bool is_right = false;
+bool refining = false;
+bool showMask = false;
+int displayType = 0;
+int edits = 0;
+
+void init()
+{
+	//set the background color to black (RGBA)
+	glClearColor(0.0,0.0,0.0,0.0);
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+}
+
+// Draw the image and paint the chosen mask over the top.
+void display()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	gc->display(displayType);
+
+	if (showMask)
+	{
+		gc->overlayAlpha();
+	}
+
+	if (box)
+	{
+		glColor4f( 1, 1, 1, 1 );
+		glBegin( GL_LINE_LOOP );
+		glVertex2d( xstart, ystart );
+		glVertex2d( xstart, yend );
+		glVertex2d( xend, yend );
+		glVertex2d( xend, ystart );
+		glEnd();
+	}
+
+	glFlush();
+	glutSwapBuffers();
+}
+
+void idle()
+{
+	int changed = 0;
+
+	if (refining)
+		{
+		changed = gc->refineOnce();
+		glutPostRedisplay();
+		}
+
+	if (!changed)
+		{
+		refining = false;
+		glutIdleFunc(NULL);
+		}
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	y = displayImage->height() - y;
+
+	switch(button)
+	{
+	case GLUT_LEFT_BUTTON:
+		if (state==GLUT_DOWN)
+		{
+			is_left = true;
+
+			if (!initialized)
+			{
+				xstart = x; ystart = y;
+				box = true;
+			}
+		}
+
+		if( state==GLUT_UP )
+		{
+			is_left = false;
+
+			if( initialized )
+			{
+				gc->refineOnce();
+				glutPostRedisplay();
+			}
+
+			else
+			{
+				xend = x; yend = y;
+				gc->initialize(xstart, ystart, xend, yend);
+				gc->fitGMMs();
+				box = false;
+				initialized = true;
+				showMask = true;
+				glutPostRedisplay();
+			}
+		}
+		break;
+
+	case GLUT_RIGHT_BUTTON:
+		if( state==GLUT_DOWN )
+		{
+			is_right = true;
+		}
+		if( state==GLUT_UP )
+		{
+			is_right = false;
+
+			if( initialized )
+			{
+				gc->refineOnce();
+				glutPostRedisplay();
+			}
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+void motion(int x, int y)
+{
+	y = displayImage->height() - y;
+
+	if( box == true )
+	{
+		xend = x; yend = y;
+		glutPostRedisplay();
+	}
+
+	if( initialized )
+	{
+		if( is_left )
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+
+		if( is_right )
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
+
+		glutPostRedisplay();
+	}
+}
+
+void keyboard(unsigned char key, int x, int y)
+{
+	y = displayImage->height() - y;
+
+	switch (key)
+	{
+	case 'q':case 'Q':				// quit
+		exit(0);
+		break;
+
+	case ' ':						// space bar show/hide alpha mask
+		showMask = !showMask;
+		break;
+
+	case '1': case 'i': case 'I':	// choose the image
+		displayType = 0;
+		break;
+
+	case '2': case 'g': case 'G':	// choose GMM index mask
+		displayType = 1;
+		break;
+
+	case '3': case 'n': case 'N':	// choose N-Link mask
+		displayType = 2;
+		break;
+
+	case '4': case 't': case 'T':	// choose T-Link mask
+		displayType = 3;
+		break;
+
+	case 'r':						// run GrabCut refinement
+		refining = true;
+		glutIdleFunc(idle);
+		break;
+
+	case 'o':						// run one step of GrabCut refinement
+		gc->refineOnce();
+		glutPostRedisplay();
+		break;
+
+	case 'l':
+		gc->fitGMMs();			// rerun the Orchard-Bowman GMM clustering
+		glutPostRedisplay();
+		break;
+
+	case 27:
+		refining = false;
+		glutIdleFunc(NULL);
+
+	default:
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
 bool parse_arg(int argc, char** argv){
 	if(argc < 2) {
 		return false;
@@ -258,18 +471,47 @@ int main(int argc, char** argv){
 
 		string profile_name = get_profile_name(g_setting.matting_filename);
 
-		if(matting(g_setting.matting_filename, "tmp-matting.jpg", &min, &mout, &profile_name, &score))
-		{
-			float ratio = (float)mout.rows / mout.cols;
-			int rows = mout.rows > 600 ? 600 : mout.rows;
-			int cols = rows/ratio;
-			cv::Mat image;
-			cv::resize(mout,image, Size(), (float)rows/mout.rows, (float)cols/mout.cols);
-			cv::namedWindow(g_setting.matting_filename.c_str(), CV_WINDOW_AUTOSIZE );
-			cv::imshow( g_setting.matting_filename.c_str(), image );
+//		if(matting(g_setting.matting_filename, "tmp-matting.jpg", &min, &mout, &profile_name, &score))
+//		{
+//			float ratio = (float)mout.rows / mout.cols;
+//			int rows = mout.rows > 600 ? 600 : mout.rows;
+//			int cols = rows/ratio;
+//			cv::Mat image;
+//			cv::resize(mout,image, Size(), (float)rows/mout.rows, (float)cols/mout.cols);
+//			cv::namedWindow(g_setting.matting_filename.c_str(), CV_WINDOW_AUTOSIZE );
+//			cv::imshow( g_setting.matting_filename.c_str(), image );
+//
+//			waitKey(0);                                          // Wait for a keystroke in the window
+//		}
 
-			waitKey(0);                                          // Wait for a keystroke in the window
+		Image<Color>* image = loadForOCV( g_setting.matting_filename );
+
+		if (image)
+		{
+			displayImage = image;
+
+			gc = new GrabCut( image );
+
+			glutInit(&argc,argv);
+			glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+
+			glutInitWindowSize(displayImage->width(),displayImage->height());
+			glutInitWindowPosition(100,100);
+
+			glutCreateWindow("GrabCut - Justin Talbot");
+
+			glOrtho(0,displayImage->width(),0,displayImage->height(),-1,1);
+
+			init();
+
+			glutDisplayFunc(display);
+			glutMouseFunc(mouse);
+			glutMotionFunc(motion);
+			glutKeyboardFunc(keyboard);
+
+			glutMainLoop();		//note: this will NEVER return.
 		}
+
 	}
 
 	return 0;

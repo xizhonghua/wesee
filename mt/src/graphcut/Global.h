@@ -14,14 +14,6 @@
 #include <math.h>
 #include <vector>
 
-#ifdef MACOS
-#include <OpenGL/gl.h>
-#include <GLUT/glut.h>
-#else
-#include <GL/gl.h>
-#include <GL/glut.h>
-#endif
-
 // Choose accuracy of computations (double doesn't seem to work for me yet.)
 //#define USE_DOUBLE
 

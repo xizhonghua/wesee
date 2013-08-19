@@ -11,7 +11,11 @@
 #include "Global.h"
 #include "Image.h"
 
-
+#ifdef MACOS
+#include <Glut/glut.h>
+#else
+#include "GL/glut.h"
+#endif
 //class Color;
 //class Image<Color>;
 
@@ -40,5 +44,7 @@ void display(Image<Real>& image, GLenum format=GL_LUMINANCE);
 Image<Color>* load( std::string file_name );
 Image<Color>* loadFromPGM( std::string file_name );
 Image<Color>* loadFromPPM( std::string file_name );
+
+Image<Color>* loadForOCV(std::string file_name);
 
 #endif //COLOR_H

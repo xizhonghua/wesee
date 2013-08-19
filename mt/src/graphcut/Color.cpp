@@ -6,6 +6,17 @@
  */
 
 #include "Color.h"
+#include "GL/gl.h"
+#include "opencv/cv.h"
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+using namespace cv;
+using namespace std;
+
+#define LONG_EDGE_PX 600
 
 Real distance2( const Color& c1, const Color& c2 )
 {
@@ -47,6 +58,54 @@ Image<Color>* load( std::string file_name )
 	{
 		return NULL;
 	}
+}
+Image<Color>* loadForOCV(std::string file_name)
+{
+	Mat out = imread(file_name.c_str(), CV_LOAD_IMAGE_COLOR);   // Read the file
+
+	if(!out.data){
+		cout<<"filed to load image "<<file_name<<endl;
+		return NULL;
+	}
+
+	double ratio = (double)out.cols / out.rows;
+
+	int width = out.cols;
+	int height = out.rows;
+
+	if(out.rows > out.cols)
+	{
+		height = LONG_EDGE_PX;
+		width = height * ratio;
+	}
+	else{
+		width = LONG_EDGE_PX;
+		height = width / ratio;
+	}
+
+	Mat im;
+	// resize the image
+	cv::resize(out, im, Size(), (float)height/out.rows, (float)width/out.cols);
+
+	Image<Color>* image = new Image<Color>(width, height);
+
+	for(int i=0; i<im.rows; i++)
+	    for(int j=0; j<im.cols; j++)
+	    {
+	    	double b = im.at<cv::Vec3b>(i,j)[0];
+	    	double g = im.at<cv::Vec3b>(i,j)[1];
+	    	double r = im.at<cv::Vec3b>(i,j)[2];
+
+	    	Real R, G, B;
+	    	R = (Real)((unsigned char)r)/255;
+	    	G = (Real)((unsigned char)g)/255;
+	    	B = (Real)((unsigned char)b)/255;
+
+	    	(*image)(j, (height-1)-i) = Color(R,G,B);
+	    }
+
+	return image;
+
 }
 
 Image<Color>* loadFromPGM( std::string file_name ) 

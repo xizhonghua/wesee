@@ -9,7 +9,6 @@
 #define IMAGE_H
 
 #include "Global.h"
-
 //#include "Color.h"
 
 // Images, really just a templatized 2D array. We use this for all the image variables.

@@ -8,8 +8,6 @@
 #include "Image.h"
 //#include "Color.h"
 
-#include "GL/glut.h"
-
 //
 //
 //Image<Color>* load( std::string file_name )

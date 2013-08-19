@@ -11,7 +11,11 @@
 #include "Global.h"
 #include "Image.h"
 
+#ifdef MACOS
+#include <Glut/glut.h>
+#else
 #include "GL/glut.h"
+#endif
 //class Color;
 //class Image<Color>;
 

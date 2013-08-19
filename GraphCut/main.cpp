@@ -9,7 +9,6 @@
 #include "GrabCut.h"
 
 #include <stdlib.h>
-#include "GL/glut.h"
 
 Image<Color> *displayImage;
 GrabCut *grabCut = 0;

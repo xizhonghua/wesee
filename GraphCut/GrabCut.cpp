@@ -6,8 +6,6 @@
  */
 
 #include "GrabCut.h" 
-//#include <conio.h>
-#include "GL/glut.h"
 #include "graph.h"
 
 GrabCut::GrabCut( Image<Color>* image )

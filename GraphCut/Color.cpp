@@ -72,9 +72,9 @@ Image<Color>* loadForOCV(std::string file_name)
 //	    			out.at<cv::Vec3b>(i,j)[1] * 0.6 +
 //	    			out.at<cv::Vec3b>(i,j)[2] * 0.1;
 //	    	out.at<cv::Vec3b>(i,j)[0] = out.at<cv::Vec3b>(i,j)[1] = out.at<cv::Vec3b>(i,j)[2];
-	    	double r =out.at<cv::Vec3b>(i,j)[0];
+	    	double b =out.at<cv::Vec3b>(i,j)[0];
 	    	double g =out.at<cv::Vec3b>(i,j)[1];
-	    	double b = out.at<cv::Vec3b>(i,j)[2];
+	    	double r = out.at<cv::Vec3b>(i,j)[2];
 
 	    	Real R, G, B;
 	    	R = (Real)((unsigned char)r)/255;

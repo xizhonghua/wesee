@@ -63,6 +63,10 @@ Image<Color>* loadForOCV(std::string file_name)
 {
 	Mat out = imread(file_name.c_str(), CV_LOAD_IMAGE_COLOR);   // Read the file
 
+	if(!out.data){
+		cout<<"filed to load image "<<file_name<<endl;
+		return NULL;
+	}
 
 	double ratio = (double)out.cols / out.rows;
 
@@ -163,7 +167,7 @@ Image<Color>* loadFromPGM( std::string file_name )
 Image<Color>* loadFromPPM( std::string file_name ) 
 {
 	std::ifstream inPPM( file_name.c_str(), std::ios::in | std::ios::binary );
-	if( !inPPM.is_open() ) return false;
+	if( !inPPM.is_open() ) return NULL;
 
 	char version[2];
 	inPPM.read(version, 2);

@@ -16,6 +16,8 @@
 using namespace cv;
 using namespace std;
 
+#define LONG_EDGE_PX 600
+
 Real distance2( const Color& c1, const Color& c2 )
 {
 	return ((c1.r-c2.r)*(c1.r-c2.r)+(c1.g-c2.g)*(c1.g-c2.g)+(c1.b-c2.b)*(c1.b-c2.b));
@@ -60,21 +62,35 @@ Image<Color>* load( std::string file_name )
 Image<Color>* loadForOCV(std::string file_name)
 {
 	Mat out = imread(file_name.c_str(), CV_LOAD_IMAGE_COLOR);   // Read the file
-	int width =out.cols;
+
+
+	double ratio = (double)out.cols / out.rows;
+
+	int width = out.cols;
 	int height = out.rows;
+
+	if(out.rows > out.cols)
+	{
+		height = LONG_EDGE_PX;
+		width = height * ratio;
+	}
+	else{
+		width = LONG_EDGE_PX;
+		height = width / ratio;
+	}
+
+	Mat im;
+	// resize the image
+	cv::resize(out, im, Size(), (float)height/out.rows, (float)width/out.cols);
+
 	Image<Color>* image = new Image<Color>(width, height);
-	//Example: convert to BW
-	for(int i=0; i<out.rows; i++)
-	    for(int j=0; j<out.cols; j++)
+
+	for(int i=0; i<im.rows; i++)
+	    for(int j=0; j<im.cols; j++)
 	    {
-//	    	unsigned char c =
-//	    			out.at<cv::Vec3b>(i,j)[0] * 0.3 +
-//	    			out.at<cv::Vec3b>(i,j)[1] * 0.6 +
-//	    			out.at<cv::Vec3b>(i,j)[2] * 0.1;
-//	    	out.at<cv::Vec3b>(i,j)[0] = out.at<cv::Vec3b>(i,j)[1] = out.at<cv::Vec3b>(i,j)[2];
-	    	double b =out.at<cv::Vec3b>(i,j)[0];
-	    	double g =out.at<cv::Vec3b>(i,j)[1];
-	    	double r = out.at<cv::Vec3b>(i,j)[2];
+	    	double b = im.at<cv::Vec3b>(i,j)[0];
+	    	double g = im.at<cv::Vec3b>(i,j)[1];
+	    	double r = im.at<cv::Vec3b>(i,j)[2];
 
 	    	Real R, G, B;
 	    	R = (Real)((unsigned char)r)/255;

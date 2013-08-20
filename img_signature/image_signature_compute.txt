@@ -1,0 +1,20 @@
+// image siganiture computation
+
+cSalMap = idct2(sign(dct2(img))).^2;
+
+idct2, sign, dct2 are all matlab functions
+
+IDCT2 2-D inverse discrete cosine transform.
+    B = IDCT2(A) returns the two-dimensional inverse discrete
+    cosine transform of A.
+
+SIGN   Signum function.
+    For each element of X, SIGN(X) returns 1 if the element
+    is greater than zero, 0 if it equals zero and -1 if it is
+    less than zero.  For the nonzero elements of complex X,
+    SIGN(X) = X ./ ABS(X).
+
+DCT2 2-D discrete cosine transform.
+    B = DCT2(A) returns the discrete cosine transform of A.
+    The matrix B is the same size as A and contains the
+    discrete cosine transform coefficients.

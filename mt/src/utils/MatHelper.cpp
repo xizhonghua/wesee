@@ -22,7 +22,7 @@ Mat MatHelper::resize(const Mat& org, int long_edge){
 	}
 
 	Mat out;
-	cv::resize(org, out, Size(width, height));
+	cv::resize(org, out, Size(width, height), 0, 0, cv::INTER_AREA);
 
 	return out;
 }

@@ -15,6 +15,6 @@ eigs_num=50;
 
 if (1)
     nclust =10;
-    [alpha_comps,alpha] = SpectralMatting(my_images.woman, [], 'woman_', eigs_num, nclust, ...
+    [alpha_comps,alpha] = SpectralMatting(image, [], 'image_', eigs_num, nclust, ...
         [], save_partial_results);
 end

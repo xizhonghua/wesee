@@ -21,8 +21,10 @@ Mat MatHelper::resize(const Mat& org, int long_edge){
 		width = height*aspect;
 	}
 
+	bool enarge = width > org.cols;
+
 	Mat out;
-	cv::resize(org, out, Size(width, height), 0, 0, cv::INTER_AREA);
+	cv::resize(org, out, Size(width, height), 0, 0, (enarge ? cv::INTER_CUBIC : cv::INTER_AREA));
 
 	return out;
 }

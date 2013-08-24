@@ -3,16 +3,24 @@
 
 #include <stdio.h>
 #include <dirent.h>
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 using namespace std;
 
 #include <opencv2/highgui/highgui.hpp>
 
 #include "Matting.h"
-#include "Timer.h"
+
 #include "setting.h"
+#include "Global.h"
+#include "GrabCut.h"
+
+#include "Timer.h"
+#include "MatHelper.h"
+
 
 bool parse_arg(int argc, char** argv);
 void print_usage(int argc, char** argv);

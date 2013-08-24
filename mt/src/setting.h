@@ -16,6 +16,15 @@ public:
 	bool training_mode = false;
 	bool training_batch_mode = false;
 	bool matting_batch_mode = false;
+
+
+	bool evaluation_mode = false;
+	string profile_filename;
+	string profile_ground_truth_filename;
+
+	bool resize_mode = false;
+	string resize_filename;
+	int resize_long_edge;
 };
 
 #endif /*  __SETTING_H__ */

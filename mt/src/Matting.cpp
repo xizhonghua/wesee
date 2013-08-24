@@ -49,7 +49,7 @@ double Matting::evaluate(const Mat& ground_truth, const Mat& result){
 	if(g.rows != r.rows || g.cols != r.cols){
 		cout<<"! Warning ! size doesn't match"
 			<<" groud_truth = "<<g.rows<<"x"<<g.cols
-			<<" result = "<<r.rows<<"x"<<r.cols;
+			<<" result = "<<r.rows<<"x"<<r.cols<<endl;
 	}
 
 	int min_rows = std::min(g.rows, r.rows);
@@ -61,7 +61,7 @@ double Matting::evaluate(const Mat& ground_truth, const Mat& result){
 	for(int i=0; i<min_rows; i++)
 		for(int j=0; j<min_cols; j++)
 		    {
-		    	unsigned char r_g = g.at<cv::Vec4b>(i,j)[3];
+		    	unsigned char r_g = g.at<unsigned char>(i,j);
 		    	unsigned char r_r = r.at<unsigned char>(i,j);
 		    	if(r_g == 255 && r_r == 255) inter_count++;
 		    	if(r_g == 255 || r_r == 255) union_count++;

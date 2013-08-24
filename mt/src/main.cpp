@@ -6,11 +6,6 @@
  */
 #include "main.h"
 
-#include "Global.h"
-#include "GrabCut.h"
-
-#include <stdlib.h>
-
 Image<Color> *displayImage;
 GrabCut* gc = NULL;
 
@@ -178,6 +173,10 @@ void evaluation(){
 
 	cout<<"seg result got "<<seg.rows<<"x"<<seg.cols<<endl;
 
+	Mat seg_in = seg.clone();
+
+	//GaussianBlur(seg_in, seg, Size(1,1),0,0);
+
 	Mat im;
 	cv::resize(seg, im, Size(), (float)img_ground_truth.rows / seg.rows, (float)img_ground_truth.cols/seg.cols);
 	cout<<"image enlarged to "<<im.rows<<"x"<<im.cols<<endl;
@@ -287,10 +286,37 @@ bool parse_arg(int argc, char** argv){
 			if(i+1 < argc) {
 				g_setting.training_dir = argv[++i];
 				g_setting.training_batch_mode = true;
+			}else {
+				return false;
 			}
 		}
 		else if(arg == "-e") {
 			g_setting.enable_evaluation = true;
+		}
+		else if(arg == "-ev") {
+			if(i+2 < argc){
+				g_setting.evaluation_mode = true;
+				g_setting.profile_filename = argv[++i];
+				g_setting.profile_ground_truth_filename = argv[++i];
+			}
+			else {
+				return false;
+			}
+		}
+		else if(arg == "-resize") {
+			g_setting.resize_mode = true;
+			if(i+1 < argc) {
+				g_setting.resize_filename = argv[++i];
+			}else{
+				return false;
+			}
+			if(i+1 < argc && argv[i+1][0] != '-') {
+				stringstream ss(argv[++i]);
+				ss>>g_setting.resize_long_edge;
+			}
+			else{
+				g_setting.resize_long_edge = 240;
+			}
 		}
 		else
 		{
@@ -304,11 +330,14 @@ bool parse_arg(int argc, char** argv){
 }
 
 void print_usage(int argc, char** argv){
-	cout<<"usage: "<<argv[0]<<" [-e] [-m filename] [-t filename] [-ta input_dir] [input_dir]"<<endl;
+	cout<<"usage: "<<argv[0]<<" [Options]"<<endl;
+	cout<<"options:"<<endl;
 	cout<<"\t-e enable evaluation, will NOT save result to file"<<endl;
 	cout<<"\t-m filename: mat single image"<<endl;
 	cout<<"\t-t filename: train single image"<<endl;
+	cout<<"\t-ev profile ground_truth: evaluation profile with ground_truth"<<endl;
 	cout<<"\t-ta input_dir: train entire directory"<<endl;
+	cout<<"\t-resize filename [long_edge]: resize the image"<<endl;
 	cout<<"\tinput_dir: mat entire directory"<<endl;
 }
 
@@ -481,10 +510,50 @@ void train_batch(const string& input_dir)
 	Matting::dump_training_results();
 }
 
+void evaluate(const string& profile, const string& ground_truth){
+	Mat p = cv::imread(profile, cv::IMREAD_UNCHANGED);
+	Mat g = cv::imread(ground_truth, cv::IMREAD_UNCHANGED);
+	vector<Mat> ch;
+	cv::split(p, ch);
+	p = ch.back();
+	ch.clear();
+	split(g, ch);
+	g = ch.back();
+	Matting m;
+	double score = m.evaluate(g, p);
+	printf("score = %.4lf profile = %s ground_truth = %s\n", score, profile.c_str(), ground_truth.c_str());
+}
+
+void resize(const string& filename, const int long_edge){
+	Mat img = cv::imread(filename, cv::IMREAD_UNCHANGED);
+	Mat out = MatHelper::resize(img, long_edge);
+	string out_filename = filename;
+	out_filename.insert(out_filename.find_last_of('.'), "-s");
+	out_filename.erase(out_filename.find_last_of('.'));
+	out_filename += ".png";
+
+	vector<int> params;
+	params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	params.push_back(9);
+	cv::imwrite(out_filename, out);
+
+	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
+}
+
 int main(int argc, char** argv){
 
 	if(!parse_arg(argc, argv)){
 		print_usage(argc, argv);
+		return 0;
+	}
+
+	if(g_setting.evaluation_mode){
+		evaluate(g_setting.profile_filename, g_setting.profile_ground_truth_filename);
+		return 0;
+	}
+
+	if(g_setting.resize_mode){
+		resize(g_setting.resize_filename, g_setting.resize_long_edge);
 		return 0;
 	}
 
@@ -513,7 +582,7 @@ int main(int argc, char** argv){
 
 		Image<Color>* image = loadForOCV( g_setting.matting_filename );
 
-		img_ground_truth = imread(profile_name, -1);
+		img_ground_truth = imread(profile_name, cv::IMREAD_UNCHANGED);
 
 		cout<<"ground truth:"
 			<<" dim = "<<img_ground_truth.dims

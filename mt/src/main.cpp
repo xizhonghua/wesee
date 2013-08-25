@@ -175,20 +175,16 @@ void evaluation(){
 
 	Mat seg_in = seg.clone();
 
-	//GaussianBlur(seg_in, seg, Size(1,1),0,0);
-
-	Mat im;
-	cv::resize(seg, im, Size(), (float)img_ground_truth.rows / seg.rows, (float)img_ground_truth.cols/seg.cols);
+	Mat im  = MatHelper::resize(seg, std::max(img_ground_truth.rows, img_ground_truth.cols));
 	cout<<"image enlarged to "<<im.rows<<"x"<<im.cols<<endl;
-
-	double score = Matting::evaluate(img_ground_truth, im);
-
-	Mat ground_truth_to_display;
-	cv::resize(img_ground_truth, ground_truth_to_display, Size(), (float)seg.rows/img_ground_truth.rows, (float)seg.cols/img_ground_truth.cols);
 	vector<Mat> ch;
-	split(ground_truth_to_display, ch);
+	split(img_ground_truth, ch);
 
+	double score = Matting::evaluate(ch[ch.size()-1], im);
 	cout<<"score = "<<score<<endl;
+
+	Mat ground_truth_to_display = MatHelper::resize(img_ground_truth, std::max(seg.rows, seg.cols));
+	split(ground_truth_to_display, ch);
 
 	cv::namedWindow("seg result", CV_WINDOW_AUTOSIZE );
 	cv::imshow("seg result", seg);

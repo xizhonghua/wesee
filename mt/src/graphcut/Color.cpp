@@ -9,15 +9,6 @@
 #include "GL/gl.h"
 #include "opencv/cv.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-using namespace cv;
-using namespace std;
-
-#define LONG_EDGE_PX 600
-
 Real distance2( const Color& c1, const Color& c2 )
 {
 	return ((c1.r-c2.r)*(c1.r-c2.r)+(c1.g-c2.g)*(c1.g-c2.g)+(c1.b-c2.b)*(c1.b-c2.b));
@@ -60,7 +51,7 @@ Image<Color>* load( std::string file_name )
 	}
 }
 
-Image<Color>* loadForOCV(std::string file_name)
+Image<Color>* loadForOCV(std::string file_name, const int long_edge, Mat& im)
 {
 	Mat out = imread(file_name.c_str(), CV_LOAD_IMAGE_COLOR);   // Read the file
 
@@ -69,26 +60,9 @@ Image<Color>* loadForOCV(std::string file_name)
 		return NULL;
 	}
 
-	double ratio = (double)out.cols / out.rows;
+	im = MatHelper::resize(out, long_edge);
 
-	int width = out.cols;
-	int height = out.rows;
-
-	if(out.rows > out.cols)
-	{
-		height = LONG_EDGE_PX;
-		width = height * ratio;
-	}
-	else{
-		width = LONG_EDGE_PX;
-		height = width / ratio;
-	}
-
-	Mat im;
-	// resize the image
-	cv::resize(out, im, Size(), (float)height/out.rows, (float)width/out.cols);
-
-	Image<Color>* image = new Image<Color>(width, height);
+	Image<Color>* image = new Image<Color>(im.cols, im.rows);
 
 	for(int i=0; i<im.rows; i++)
 	    for(int j=0; j<im.cols; j++)
@@ -102,7 +76,7 @@ Image<Color>* loadForOCV(std::string file_name)
 	    	G = (Real)((unsigned char)g)/255;
 	    	B = (Real)((unsigned char)b)/255;
 
-	    	(*image)(j, (height-1)-i) = Color(R,G,B);
+	    	(*image)(j, (im.rows-1)-i) = Color(R,G,B);
 	    }
 
 	return image;

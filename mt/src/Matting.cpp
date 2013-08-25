@@ -47,7 +47,7 @@ double Matting::evaluate(const Mat& ground_truth, const Mat& result){
 	const Mat& r = result;
 
 	if(g.rows != r.rows || g.cols != r.cols){
-		cout<<"! Warning ! size doesn't match"
+		cerr<<"! Warning ! size doesn't match"
 			<<" groud_truth = "<<g.rows<<"x"<<g.cols
 			<<" result = "<<r.rows<<"x"<<r.cols<<endl;
 	}

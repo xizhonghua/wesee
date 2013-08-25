@@ -171,12 +171,9 @@ void evaluation(){
 	Mat seg;
 	gc->getSegmentationResult(&seg);
 
-	cout<<"seg result got "<<seg.rows<<"x"<<seg.cols<<endl;
-
 	Mat seg_in = seg.clone();
 
 	Mat im  = MatHelper::resize(seg, std::max(img_ground_truth.rows, img_ground_truth.cols));
-	cout<<"image enlarged to "<<im.rows<<"x"<<im.cols<<endl;
 	vector<Mat> ch;
 	split(img_ground_truth, ch);
 
@@ -185,6 +182,8 @@ void evaluation(){
 
 	Mat ground_truth_to_display = MatHelper::resize(img_ground_truth, std::max(seg.rows, seg.cols));
 	split(ground_truth_to_display, ch);
+
+	if(!g_setting.enable_gui) return;
 
 	cv::namedWindow("seg result", CV_WINDOW_AUTOSIZE );
 	cv::imshow("seg result", seg);
@@ -288,6 +287,9 @@ bool parse_arg(int argc, char** argv){
 		}
 		else if(arg == "-e") {
 			g_setting.enable_evaluation = true;
+		}
+		else if(arg == "-g") {
+			g_setting.enable_gui = false;
 		}
 		else if(arg == "-ev") {
 			if(i+2 < argc){
@@ -417,7 +419,7 @@ bool matting(const string& input, const string& output, Mat* min, Mat* mout, con
 		read_file_cost = t.getElapsedMilliseconds();
 
 		if(!img_ground_truth.data){
-			cout << " ! Error ! Could not open or find the ground truth image " << *ground_truth<< std::endl ;
+			cerr << " ! Error ! Could not open or find the ground truth image " << *ground_truth<< std::endl ;
 			return false;
 		}
 
@@ -443,14 +445,14 @@ bool training(const string& input, const string& profile)
 	img_org = imread(input, CV_LOAD_IMAGE_COLOR);
 	if(!img_org.data)
 	{
-		cout << " ! Error ! Could not open or find the image" <<input<< std::endl ;
+		cerr << " ! Error ! Could not open or find the image" <<input<< std::endl ;
 		return false;
 	}
 
 	img_profile = imread(profile, CV_LOAD_IMAGE_COLOR);
 	if(!img_profile.data)
 	{
-		cout<< " ! Error ! Could not open or find the image "<<profile<< std::endl ;
+		cerr << " ! Error ! Could not open or find the image "<<profile<< std::endl ;
 		return false;
 	}
 
@@ -461,7 +463,7 @@ bool training(const string& input, const string& profile)
 	M.train(img_org, img_profile);
 	training_cost = t.getElapsedMilliseconds();
 
-	cout<<"[Training] from "<<input<<" & "<<profile
+	cerr <<"[Training] from "<<input<<" & "<<profile
 		<<" size = "<<img_org.rows<<"x"<<img_org.cols
 		<<" read = "<<read_file_cost<<"ms"<<" train =  "<<training_cost<<"ms"<<endl;
 
@@ -536,6 +538,72 @@ void resize(const string& filename, const int long_edge){
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
 }
 
+void autoGrabCut(const Mat& min){
+	int width = min.cols;
+	int height = min.rows;
+
+	// portrait
+	if(height > width) {
+		gc->initialize(0.15*width, 0.01*height, 0.85*width, 0.98*height);
+		gc->fitGMMs();
+
+		initialized = true;
+		showMask = true;
+
+		const int PT = 20;
+		const int CL = 2;
+
+		// CLICK SOME FOREGROUND
+		for(int i=1;i<PT-4;i++){
+			int y = height*(double)i/PT;
+			for(int j=-CL;j<=CL;j++){
+				int x = width/2 + j*6;
+				gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+			}
+		}
+
+		// CLICK SOME BACKGROUND
+		for(int i=0;i<PT;i++){
+			int x = 0.2*width;
+			int y = height*(double)i/PT;
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
+
+			x = 0.8*width;
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
+		}
+
+		gc->refineOnce();
+	} else {
+		gc->initialize(0.02*width, 0.15*height, 0.98*width, 0.85*height);
+		gc->fitGMMs();
+
+		initialized = true;
+		showMask = true;
+
+		const int PT = 20;
+
+		// CLICK SOME FOREGROUND
+		for(int i=1;i<PT-1;i++){
+			int x = width*(double)i/PT;
+			int y = height/2;
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+			y += 8;
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+			y -= 8;
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+		}
+
+		// CLICK SOME BACKGROUND
+		for(int i=0;i<PT;i++){
+			int x = width*(double)i/PT;
+			int y = 0.2*height;
+			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
+		}
+
+		gc->refineOnce();
+	}
+}
+
 int main(int argc, char** argv){
 
 	if(!parse_arg(argc, argv)){
@@ -576,14 +644,9 @@ int main(int argc, char** argv){
 
 		string profile_name = get_profile_name(g_setting.matting_filename);
 
-		Image<Color>* image = loadForOCV( g_setting.matting_filename );
+		Image<Color>* image = loadForOCV( g_setting.matting_filename, LONG_EDGE_PX, min);
 
 		img_ground_truth = imread(profile_name, cv::IMREAD_UNCHANGED);
-
-		cout<<"ground truth:"
-			<<" dim = "<<img_ground_truth.dims
-			<<" channels = "<<img_ground_truth.channels()
-			<<" size = "<<img_ground_truth.size()<<endl;
 
 		if (image)
 		{
@@ -591,24 +654,44 @@ int main(int argc, char** argv){
 
 			gc = new GrabCut( image );
 
-			glutInit(&argc,argv);
-			glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+			if(g_setting.enable_gui) {
+				glutInit(&argc,argv);
+				glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
-			glutInitWindowSize(displayImage->width(),displayImage->height());
-			glutInitWindowPosition(100,100);
+				glutInitWindowSize(displayImage->width(),displayImage->height());
+				glutInitWindowPosition(100,100);
 
-			glutCreateWindow("wesee - mt");
+				glutCreateWindow("wesee - mt");
 
-			glOrtho(0,displayImage->width(),0,displayImage->height(),-1,1);
+				glOrtho(0,displayImage->width(),0,displayImage->height(),-1,1);
 
-			init();
+				init();
 
-			glutDisplayFunc(display);
-			glutMouseFunc(mouse);
-			glutMotionFunc(motion);
-			glutKeyboardFunc(keyboard);
+				glutDisplayFunc(display);
+				glutMouseFunc(mouse);
+				glutMotionFunc(motion);
+				glutKeyboardFunc(keyboard);
 
-			glutMainLoop();		//note: this will NEVER return.
+
+			}
+
+			if(g_setting.enable_evaluation)
+			{
+				if(!img_ground_truth.data)
+					cerr<<" Can't open ground truth profile : "<<profile_name<<endl;
+				else
+				{
+					autoGrabCut(min);
+					evaluation();
+				}
+			}
+			else
+			{
+				autoGrabCut(min);
+			}
+
+			if(g_setting.enable_gui)
+				glutMainLoop();		//note: this will NEVER return.
 		}
 
 	}

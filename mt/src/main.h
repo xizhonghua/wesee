@@ -21,6 +21,8 @@ using namespace std;
 #include "Timer.h"
 #include "MatHelper.h"
 
+#define LONG_EDGE_PX 360
+
 
 bool parse_arg(int argc, char** argv);
 void print_usage(int argc, char** argv);

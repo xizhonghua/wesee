@@ -114,7 +114,7 @@ int GrabCut::refineOnce()
 		flow = m_graph->maxflow();
 	
 	int changed = updateHardSegmentation();
-	printf("%d pixels changed segmentation (max flow = %f)\n", changed, flow ); 
+	fprintf(stderr, "%d pixels changed segmentation (max flow = %f)\n", changed, flow );
 
 	// Build debugging images
 	buildImages();

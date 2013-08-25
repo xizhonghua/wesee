@@ -11,6 +11,15 @@
 #include "Global.h"
 #include "Image.h"
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#include "MatHelper.h"
+
+using namespace cv;
+using namespace std;
+
 #ifdef MACOS
 #include <Glut/glut.h>
 #else
@@ -45,6 +54,6 @@ Image<Color>* load( std::string file_name );
 Image<Color>* loadFromPGM( std::string file_name );
 Image<Color>* loadFromPPM( std::string file_name );
 
-Image<Color>* loadForOCV(std::string file_name);
+Image<Color>* loadForOCV(std::string file_name, const int long_edge, Mat& im);
 
 #endif //COLOR_H

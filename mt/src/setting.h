@@ -6,27 +6,42 @@ using namespace std;
 
 class setting {
 public:
+	setting(){
+		this->enable_gui = true;
+		this->enable_evaluation = false;
+		this->training_mode = false;
+		this->training_batch_mode = false;
+		this->matting_batch_mode = false;
+
+		this->matting_mode = false;
+		this->max_refine_iterations = 5;
+
+		this->output_profile = false;
+
+		this->resize_mode = false;
+		this->evaluation_mode = false;
+	}
 	string matting_filename;
 	string training_filename;
 	string input_dir;
 	string training_dir;
-	bool enable_gui = true;
-	bool enable_evaluation = false;
+	bool enable_gui;
+	bool enable_evaluation;
 
-	bool training_mode = false;
-	bool training_batch_mode = false;
-	bool matting_batch_mode = false;
+	bool training_mode;
+	bool training_batch_mode;
+	bool matting_batch_mode;
 
-	bool matting_mode = false;
-	int max_refine_iterations = 5;
+	bool matting_mode;
+	int max_refine_iterations;
 
-	bool output_profile = false;
+	bool output_profile;
 
-	bool evaluation_mode = false;
+	bool evaluation_mode;
 	string profile_filename;
 	string profile_ground_truth_filename;
 
-	bool resize_mode = false;
+	bool resize_mode;
 	string resize_filename;
 	int resize_long_edge;
 };

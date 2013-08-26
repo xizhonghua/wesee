@@ -1,6 +1,7 @@
 /Dependencies
 /matting
 data/
+*.zip
 *.o
 .project
 .cproject

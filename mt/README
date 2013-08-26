@@ -1,14 +1,34 @@
-repository for matting
+wesee - matting
 
-usage: ./matting [-e] [-m filename] [-t filename] [-ta input_dir] [input_dir]
-	-e enable evaluation, will NOT save result to file
-	-m filename: mat single image
-	-t filename: train single image
-	-ta input_dir: train entire directory
-	input_dir: mat entire directory
+Team members:
+Xing Zhou(leader)
+Shenhui Zhou
+Guilin Liu
+Zhonghua Xi
 
+Libs: OpenGL/GLUT and OpenCV used
 
-examples:
+Build: just type make, should be compiled on mac & linux with g++ 4.7
+
+Running the test:
+	./matting -op -g -m filename.jpg
+	# will output single channel filename-profile.png in png format with foreground in white(0xFF), background in black(0x00).
+
+Usage: ./matting [Options]
+	options:
+	[-g]: no gui
+	[-e]: enable evaluation, will NOT save result to file
+	[-m filename]: mat single image
+	[-mr iterations]: max refine iterations
+	[-t filename]: train single image
+	[-ev profile ground_truth]: evaluation profile with ground_truth
+	[-ta input_dir]: train entire directory
+	[-op]: output profile, should use with [-m]
+	[-resize filename [long_edge=360]]: resize the image
+	[input_dir]: mat entire directory
+	[-h]: show this message
+
+Other examples:
 	./matting -e -m test/00037.jpg
 	#mat single image and evaluate with ground truth
 	 		

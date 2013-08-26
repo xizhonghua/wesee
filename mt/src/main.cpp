@@ -162,40 +162,40 @@ void motion(int x, int y)
 	}
 }
 
-void evaluation(){
+double evaluation(Mat& im){
 	if(!img_ground_truth.data) {
 		cout<<"ground truth not found"<<endl;
-		return;
+		return 0;
 	}
 
-	Mat seg;
-	gc->getSegmentationResult(&seg);
-
-	Mat seg_in = seg.clone();
-
-	Mat im  = MatHelper::resize(seg, std::max(img_ground_truth.rows, img_ground_truth.cols));
 	vector<Mat> ch;
 	split(img_ground_truth, ch);
 
 	double score = Matting::evaluate(ch[ch.size()-1], im);
-	cout<<"score = "<<score<<endl;
 
-	Mat ground_truth_to_display = MatHelper::resize(img_ground_truth, std::max(seg.rows, seg.cols));
+	Mat ground_truth_to_display = MatHelper::resize(img_ground_truth, LONG_EDGE_PX);
 	split(ground_truth_to_display, ch);
 
-	if(!g_setting.enable_gui) return;
+	Mat resultToShow = MatHelper::resize(im, LONG_EDGE_PX);
 
-	cv::namedWindow("seg result", CV_WINDOW_AUTOSIZE );
-	cv::imshow("seg result", seg);
+	if(!g_setting.enable_gui) return score;
+
+	cv::namedWindow("matting result", CV_WINDOW_AUTOSIZE );
+	cv::imshow("matting result", resultToShow);
+	cv::moveWindow("matting result", 100 + ground_truth_to_display.cols + 20, 100);
 	cv::namedWindow("ground truth", CV_WINDOW_AUTOSIZE );
 	cv::imshow("ground truth", ch[3]);
-	//
-	cv::waitKey(2);
+	cv::moveWindow("ground truth", 100 + (ground_truth_to_display.cols + 20)*2, 100);
+
+	cerr<<"score "<<score<<endl;
+
+	return score;
 }
 
 void keyboard(unsigned char key, int x, int y)
 {
 	y = displayImage->height() - y;
+	Mat result,output;
 
 	switch (key)
 	{
@@ -239,7 +239,9 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 
 	case 'e':					// evaluation
-		evaluation();
+		gc->getSegmentationResult(&result);
+		output = MatHelper::resize(result, img_ground_truth.cols,  img_ground_truth.rows);
+		evaluation(output);
 		break;
 
 	case 27:
@@ -268,6 +270,17 @@ bool parse_arg(int argc, char** argv){
 			else{
 				return false;
 			}
+		}
+		else if(arg == "-mr" || arg == "--max-refine") {
+			if(i+1 < argc && argv[i+1][0] != '-') {
+				stringstream ss(argv[++i]);
+				ss>>g_setting.max_refine_iterations;
+				g_setting.max_refine_iterations = std::max(g_setting.max_refine_iterations, 1);
+				g_setting.max_refine_iterations = std::min(g_setting.max_refine_iterations, 100);
+			}
+		}
+		else if(arg == "-op") {
+			g_setting.output_profile = true;
 		}
 		else if(arg == "-t"){
 			if(i+1 < argc){
@@ -301,6 +314,9 @@ bool parse_arg(int argc, char** argv){
 				return false;
 			}
 		}
+		else if(arg == "-h") {
+			return false;
+		}
 		else if(arg == "-resize") {
 			g_setting.resize_mode = true;
 			if(i+1 < argc) {
@@ -329,14 +345,21 @@ bool parse_arg(int argc, char** argv){
 
 void print_usage(int argc, char** argv){
 	cout<<"usage: "<<argv[0]<<" [Options]"<<endl;
+	cout<<"examples:"<<endl;
+	cout<<"\t"<<argv[0]<<" -e -m 001.jpg "<<"# matting & evaluating 001.jpg with 001-profile.jpg"<<endl;
+	cout<<endl;
 	cout<<"options:"<<endl;
-	cout<<"\t-e enable evaluation, will NOT save result to file"<<endl;
-	cout<<"\t-m filename: mat single image"<<endl;
-	cout<<"\t-t filename: train single image"<<endl;
-	cout<<"\t-ev profile ground_truth: evaluation profile with ground_truth"<<endl;
-	cout<<"\t-ta input_dir: train entire directory"<<endl;
-	cout<<"\t-resize filename [long_edge]: resize the image"<<endl;
-	cout<<"\tinput_dir: mat entire directory"<<endl;
+	cout<<"\t[-g]: no gui"<<endl;
+	cout<<"\t[-e]: enable evaluation, will NOT save result to file"<<endl;
+	cout<<"\t[-m filename]: mat single image"<<endl;
+	cout<<"\t[-mr iterations]: max refine iterations"<<endl;
+	cout<<"\t[-t filename]: train single image"<<endl;
+	cout<<"\t[-ev profile ground_truth]: evaluation profile with ground_truth"<<endl;
+	cout<<"\t[-ta input_dir]: train entire directory"<<endl;
+	cout<<"\t[-op]: output profile, should use with [-m]"<<endl;
+	cout<<"\t[-resize filename [long_edge=360]]: resize the image"<<endl;
+	cout<<"\t[input_dir]: mat entire directory"<<endl;
+	cout<<"\t[-h]: show this message"<<endl;
 }
 
 string get_profile_name(const string& input){
@@ -538,26 +561,29 @@ void resize(const string& filename, const int long_edge){
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
 }
 
-void autoGrabCut(const Mat& min){
+double autoGrabCut(const Mat& min, Mat& output){
+	Timer t;
+	t.restart();
+
 	int width = min.cols;
 	int height = min.rows;
+
+
+	const int PT = 20;
+	const int CL = 1;
+	const double PI = acos(-1);
+
 
 	// portrait
 	if(height > width) {
 		gc->initialize(0.15*width, 0.01*height, 0.85*width, 0.98*height);
 		gc->fitGMMs();
 
-		initialized = true;
-		showMask = true;
-
-		const int PT = 20;
-		const int CL = 2;
-
 		// CLICK SOME FOREGROUND
-		for(int i=1;i<PT-4;i++){
+		for(int i=3;i<PT-4;i++){
 			int y = height*(double)i/PT;
 			for(int j=-CL;j<=CL;j++){
-				int x = width/2 + j*6;
+				int x = width/2 + j*4;
 				gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
 			}
 		}
@@ -572,36 +598,54 @@ void autoGrabCut(const Mat& min){
 			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
 		}
 
-		gc->refineOnce();
 	} else {
-		gc->initialize(0.02*width, 0.15*height, 0.98*width, 0.85*height);
+		// landscape
+		gc->initialize(0.15*width, 0.01*height, 0.85*width, 0.98*height);
 		gc->fitGMMs();
 
-		initialized = true;
-		showMask = true;
 
-		const int PT = 20;
 
 		// CLICK SOME FOREGROUND
-		for(int i=1;i<PT-1;i++){
+		for(int i=6;i<PT-6;i++){
 			int x = width*(double)i/PT;
 			int y = height/2;
 			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
-			y += 8;
+		}
+
+		// CLICK SOME FOREGROUND
+		for(int i=3;i<PT-6;i++){
+			int y = height*(double)i/PT;
+			int x = width/2;
 			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
-			y -= 8;
-			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+
 		}
 
 		// CLICK SOME BACKGROUND
 		for(int i=0;i<PT;i++){
-			int x = width*(double)i/PT;
-			int y = 0.2*height;
+			int x = width*1/3*cos(i*PI/PT) + width/2;
+			int y = height*1/3*sin(i*PI/PT) + height/2;
 			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
 		}
-
-		gc->refineOnce();
 	}
+
+	initialized = true;
+	showMask = true;
+
+	int max_refine_times = g_setting.max_refine_iterations;
+	int changed = INT_MAX;
+
+	while(changed > 5 && max_refine_times-- && t.getElapsedMilliseconds() < 2000){
+		changed = gc->refineOnce();
+	}
+
+	double cost = t.getElapsedMilliseconds();
+
+	Mat seg;
+	gc->getSegmentationResult(&seg);
+
+	output = MatHelper::resize(seg, img_ground_truth.cols,  img_ground_truth.rows);
+
+	return cost;
 }
 
 int main(int argc, char** argv){
@@ -624,17 +668,20 @@ int main(int argc, char** argv){
 	if(g_setting.matting_batch_mode)
 	{
 		run_batch(g_setting.input_dir);
+		return 0;
 	}
 
 	if(g_setting.training_batch_mode)
 	{
 		train_batch(g_setting.training_dir);
+		return 0;
 	}
 
 	if(g_setting.training_mode)
 	{
 		training(g_setting.training_filename, get_profile_name(g_setting.training_filename));
 		Matting::dump_training_results();
+		return 0;
 	}
 
 	if(g_setting.matting_mode)
@@ -675,19 +722,38 @@ int main(int argc, char** argv){
 
 			}
 
+			// ==============================================
+			// auto grab cut
+			// ==============================================
+			Mat result;
 			if(g_setting.enable_evaluation)
 			{
 				if(!img_ground_truth.data)
+				{
 					cerr<<" Can't open ground truth profile : "<<profile_name<<endl;
+					return 0;
+				}
 				else
 				{
-					autoGrabCut(min);
-					evaluation();
+					double cost = autoGrabCut(min, result);
+					double score = evaluation(result);
+					cout<<"file = "<<g_setting.matting_filename<<" score = "<<score<<" time = "<<cost<<"ms"<<endl;
 				}
 			}
 			else
 			{
-				autoGrabCut(min);
+				double cost = autoGrabCut(min, result);
+				cout<<"file = "<<g_setting.matting_filename<<" time = "<<cost<<"ms"<<endl;
+			}
+
+			// ==============================================
+			// save profile
+			// ==============================================
+			if(g_setting.output_profile)
+			{
+				string output_profile_name = profile_name.substr(0, profile_name.find_last_of(".")) + ".png";
+				cv::imwrite(output_profile_name, result);
+				cerr<<"output profile to "<<output_profile_name<<endl;
 			}
 
 			if(g_setting.enable_gui)

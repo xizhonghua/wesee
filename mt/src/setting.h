@@ -12,11 +12,15 @@ public:
 	string training_dir;
 	bool enable_gui = true;
 	bool enable_evaluation = false;
-	bool matting_mode = false;
+
 	bool training_mode = false;
 	bool training_batch_mode = false;
 	bool matting_batch_mode = false;
 
+	bool matting_mode = false;
+	int max_refine_iterations = 5;
+
+	bool output_profile = false;
 
 	bool evaluation_mode = false;
 	string profile_filename;

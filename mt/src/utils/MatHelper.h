@@ -17,6 +17,7 @@ using namespace cv;
 class MatHelper {
 public:
 	static Mat resize(const Mat& ori, int long_edge);
+	static Mat resize(const Mat& ori, int width, int height);
 };
 
 #endif /* MATHELPER_H_ */

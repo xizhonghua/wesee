@@ -8,7 +8,6 @@
 #include "MatHelper.h"
 
 Mat MatHelper::resize(const Mat& org, int long_edge){
-
 	double aspect = (double)org.cols/org.rows;
 
 	int width, height;
@@ -29,3 +28,11 @@ Mat MatHelper::resize(const Mat& org, int long_edge){
 	return out;
 }
 
+Mat MatHelper::resize(const Mat& ori, int width, int height){
+	bool enarge = width > ori.cols;
+
+	Mat out;
+	cv::resize(ori, out, Size(width, height), 0, 0, (enarge ? cv::INTER_CUBIC : cv::INTER_AREA));
+
+	return out;
+}

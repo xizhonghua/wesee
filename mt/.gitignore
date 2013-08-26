@@ -1,6 +1,8 @@
 /Dependencies
 /matting
 data/
+test/
+training/
 *.zip
 *.o
 .project

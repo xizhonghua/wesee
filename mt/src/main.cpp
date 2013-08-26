@@ -458,21 +458,21 @@ bool matting(const string& input, const string& output, Mat* min, Mat* mout, con
 	return true;
 }
 
-bool training(const string& input, const string& profile)
+bool training(Statistics& stat, const string& input, const string& profile)
 {
 	Timer t;
 	Mat img_org, img_profile;
 	double read_file_cost, training_cost;
 	t.restart();
 
-	img_org = imread(input, CV_LOAD_IMAGE_COLOR);
+	img_org = imread(input, CV_LOAD_IMAGE_UNCHANGED);
 	if(!img_org.data)
 	{
 		cerr << " ! Error ! Could not open or find the image" <<input<< std::endl ;
 		return false;
 	}
 
-	img_profile = imread(profile, CV_LOAD_IMAGE_COLOR);
+	img_profile = imread(profile, CV_LOAD_IMAGE_UNCHANGED);
 	if(!img_profile.data)
 	{
 		cerr << " ! Error ! Could not open or find the image "<<profile<< std::endl ;
@@ -482,8 +482,9 @@ bool training(const string& input, const string& profile)
 	read_file_cost = t.getElapsedMilliseconds();
 
 	t.restart();
-	Matting M;
-	M.train(img_org, img_profile);
+
+	stat.stat(img_org, img_profile);
+
 	training_cost = t.getElapsedMilliseconds();
 
 	cerr <<"[Training] from "<<input<<" & "<<profile
@@ -518,17 +519,49 @@ void run_batch(const string& input_dir)
 
 void train_batch(const string& input_dir)
 {
+
+	Timer t;
+
+	Statistics stat;
+
 	vector<string> files = get_files(input_dir);
+
+	int trained = 0;
 
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
 		const string& filename = input_dir + "/" + *it;
 		string training_filename = get_profile_name(filename);
 
-		training(filename, training_filename);
+		trained += training(stat, filename, training_filename);
 	}
 
-	Matting::dump_training_results();
+	cout<<trained<<" image trained in "<<t.getElapsedMilliseconds()<<endl;
+
+
+	stat.save_data("training.xml.gz");
+	cout<<"training data saved"<<endl;
+
+	files = get_files("test");
+
+	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
+	{
+		const string& filename = "test/" + *it;
+
+		Mat input, output;
+		input = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
+		if(!input.data) {
+			cerr<<"Can't open "<<filename<<endl;
+			continue;
+		}
+		output = Mat::zeros(input.rows, input.cols, CV_8UC1);
+		stat.predict(input, output);
+
+		string output_filename = filename + ".predit.png";
+		cout<<"dumping "<<output_filename<<endl;
+
+		cv::imwrite(output_filename, output);
+	}
 }
 
 void evaluate(const string& profile, const string& ground_truth){
@@ -674,13 +707,6 @@ int main(int argc, char** argv){
 	if(g_setting.training_batch_mode)
 	{
 		train_batch(g_setting.training_dir);
-		return 0;
-	}
-
-	if(g_setting.training_mode)
-	{
-		training(g_setting.training_filename, get_profile_name(g_setting.training_filename));
-		Matting::dump_training_results();
 		return 0;
 	}
 

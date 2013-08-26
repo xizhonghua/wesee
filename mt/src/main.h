@@ -10,11 +10,11 @@
 #include <vector>
 using namespace std;
 
-#include <opencv2/highgui/highgui.hpp>
-
-#include "Matting.h"
-
 #include "setting.h"
+#include "Matting.h"
+#include "Statistics.h"
+
+
 #include "Global.h"
 #include "GrabCut.h"
 
@@ -32,7 +32,7 @@ string get_profile_name(const string& input);
 vector<string> get_files(const string& input_dir);
 
 bool matting(const string& input, const string& output, Mat* min, Mat* out, const string* ground_truth, double* score);
-bool training(const string& input, const string& profile);
+bool training(Statistics& stat, const string& input, const string& profile);
 void run_batch(const string& input_dir);
 void train_batch(const string& input_dir);
 

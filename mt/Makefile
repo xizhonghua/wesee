@@ -7,7 +7,6 @@
 
 TARGET = matting
 SRC_DIR=./src
-LIB_DIR=./libs
 
 #
 # Determine the platform (Linux, Mac OS X, Windows+Cygwin etc.)
@@ -78,7 +77,7 @@ MT_SUB_DIRS = $(SRC_DIR) \
 MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 
 #--------------------------------------------------------------------
-INCLUDE = -I. $(MT_INCL) -I$(LIB_DIR) $(CV_INCL) $(GL_INCL)
+INCLUDE = -I. $(MT_INCL) $(CV_INCL) $(GL_INCL)
 LIB = -lm $(GL_LIB) $(CV_LIB) $(GL_LIB)
 
 #--------------------------------------------------------------------

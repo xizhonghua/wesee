@@ -1,18 +1,27 @@
-wesee - matting
+Team name: 
+	WESEE
+
+Problem: 
+	matting
 
 Team members:
-Xing Zhou(leader)
-Shenhui Zhou
-Guilin Liu
-Zhonghua Xi
+	Xing Zhou(leader) : xzhou10@gmu.edu
+	Shenhui Zhou : szhou5@gmu.edu
+	Guilin Liu : liuguilin1225@gmail.com
+	Zhonghua Xi : xizhonghua@gmail.com
 
-Libs: OpenGL/GLUT and OpenCV used
+Basic intro:
+	Use learned trimap as input and graphcut to get the segmentation
 
-Build: just type make, should be compiled on mac & linux with g++ 4.7
+Build: 
+	just type make, should be compiled on mac & linux with g++ 4.7
+
+Libs Used: 
+	OpenGL/GLUT and OpenCV
 
 Running the test:
 	./matting -op -g -m filename.jpg
-	# will output single channel filename-profile.png in png format with foreground in white(0xFF), background in black(0x00).
+	# will output the profile to filename-profile.png which is a single channel image in png format with foreground in white(0xFF), background in black(0x00).
 
 Usage: ./matting [Options]
 	options:
@@ -31,12 +40,6 @@ Usage: ./matting [Options]
 Other examples:
 	./matting -e -m test/00037.jpg
 	#mat single image and evaluate with ground truth
-	 		
-	./matting -e test					
-	#mat all images in "test" folder and evaluate with ground truth
-	
-	./matting input_dir
-	#mat all images in "input_dir" folder and save output to files
 	
 	./matting -t training/000301.jpg
 	#train single image

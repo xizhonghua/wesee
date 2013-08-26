@@ -36,3 +36,17 @@ Mat MatHelper::resize(const Mat& ori, int width, int height){
 
 	return out;
 }
+
+Mat MatHelper::read_image(const string& filename, int long_edge){
+	Mat input = imread(filename, cv::IMREAD_UNCHANGED);
+	if(long_edge == 0) return input;
+	return MatHelper::resize(input, long_edge);
+}
+
+
+Mat MatHelper::read_image_ch(const string& string, int ch){
+	Mat input = imread(string.c_str(), cv::IMREAD_UNCHANGED);
+	vector<Mat> chs;
+	cv::split(input, chs);
+	return chs[ch];
+}

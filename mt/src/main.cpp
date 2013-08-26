@@ -496,7 +496,20 @@ bool training(Statistics& stat, const string& input, const string& profile)
 
 void run_batch(const string& input_dir)
 {
+	Statistics stat;
+
+	Timer t;
+
+	if(!stat.read_data("train.bin")){
+		cerr<<"Can't open training data."<<endl;
+	}
+	else {
+		cerr<<"Training data loaded in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
+	}
+
 	vector<string> files = get_files(input_dir);
+
+	cerr<<files.size()<<" job(s) got"<<endl;
 
 	Mat min, mout;
 	double total_score = 0.0;
@@ -504,17 +517,32 @@ void run_batch(const string& input_dir)
 
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
+
 		const string filename = input_dir + "/" + *it;
 		const string profile_filename = get_profile_name(filename);
 		string output_filename = get_profile_name(*it);
-		double score = 0.0;
 
-		matting(filename, output_filename, &min, &mout, &profile_filename, &score);
-		total_score += score;
+		cerr<<"processing " + filename + "..."<<endl;
+
+		Mat ori = MatHelper::read_image(filename);
+		Mat input = MatHelper::read_image(filename, LONG_EDGE_PX);
+		Mat predict = Mat::zeros(input.rows, input.cols, CV_8UC1);
+
+		stat.predict(input, predict);
+
+		cout<<"predicted"<<endl;
+
+		imwrite(filename + ".predict.png", predict);
+
+		if(g_setting.enable_evaluation) {
+			Mat ground_truth = imread(profile_filename, cv::IMREAD_UNCHANGED);
+			//TODO
+		}
+
+		if(g_setting.output_profile) {
+			//TODO
+		}
 	}
-
-	if(g_setting.enable_evaluation)
-		cout<<"Average score = "<< total_score / files.size()<<endl;
 }
 
 void train_batch(const string& input_dir)
@@ -536,32 +564,34 @@ void train_batch(const string& input_dir)
 		trained += training(stat, filename, training_filename);
 	}
 
-	cout<<trained<<" image trained in "<<t.getElapsedMilliseconds()<<endl;
 
+	double training_cost = t.getElapsedMilliseconds();
 
-	stat.save_data("training.xml.gz");
+	stat.save_data("train.bin");
 	cout<<"training data saved"<<endl;
 
-	files = get_files("test");
+//	files = get_files("test");
+//
+//	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
+//	{
+//		const string& filename = "test/" + *it;
+//
+//		Mat input, output;
+//		input = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
+//		if(!input.data) {
+//			cerr<<"Can't open "<<filename<<endl;
+//			continue;
+//		}
+//		output = Mat::zeros(input.rows, input.cols, CV_8UC1);
+//		stat.predict(input, output);
+//
+//		string output_filename = filename + ".predit.png";
+//		cout<<"dumping "<<output_filename<<endl;
+//
+//		cv::imwrite(output_filename, output);
+//	}
 
-	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
-	{
-		const string& filename = "test/" + *it;
-
-		Mat input, output;
-		input = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
-		if(!input.data) {
-			cerr<<"Can't open "<<filename<<endl;
-			continue;
-		}
-		output = Mat::zeros(input.rows, input.cols, CV_8UC1);
-		stat.predict(input, output);
-
-		string output_filename = filename + ".predit.png";
-		cout<<"dumping "<<output_filename<<endl;
-
-		cv::imwrite(output_filename, output);
-	}
+	cout<<trained<<" image trained in "<<training_cost<<"ms"<<endl;
 }
 
 void evaluate(const string& profile, const string& ground_truth){

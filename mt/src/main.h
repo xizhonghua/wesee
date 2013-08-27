@@ -31,8 +31,10 @@ string get_profile_name(const string& input);
 
 vector<string> get_files(const string& input_dir);
 
+void evaluate(const string& profile, const string& ground_truth);
 bool matting(const string& input, const string& output, Mat* min, Mat* out, const string* ground_truth, double* score);
 bool training(Statistics& stat, const string& input, const string& profile);
+double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, Mat& output);
 void run_batch(const string& input_dir);
 void train_batch(const string& input_dir);
 

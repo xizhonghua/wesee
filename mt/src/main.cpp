@@ -511,10 +511,6 @@ void run_batch(const string& input_dir)
 
 	cerr<<files.size()<<" job(s) got"<<endl;
 
-	Mat min, mout;
-	double total_score = 0.0;
-
-
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
 
@@ -525,23 +521,37 @@ void run_batch(const string& input_dir)
 		cerr<<"processing " + filename + "..."<<endl;
 
 		Mat ori = MatHelper::read_image(filename);
-		Mat input = MatHelper::read_image(filename, LONG_EDGE_PX);
-		Mat predict = Mat::zeros(input.rows, input.cols, CV_8UC1);
+		Mat input;
+		Image<Color>* image = loadForOCV(filename, LONG_EDGE_PX, input);
+		Mat predict = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
 
-		stat.predict(input, predict);
-
-		cout<<"predicted"<<endl;
+		stat.predict(ori, predict);
 
 		imwrite(filename + ".predict.png", predict);
 
+		Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
+//		Mat gt = MatHelper::read_image_ch(profile_filename, 3);
+//		Mat gt_s = MatHelper::resize(gt, LONG_EDGE_PX);
+//
+//		cerr<<"gt_s"<<gt_s.size<<endl;
+
+		Mat result;
+		GrabCut* gc = new GrabCut( image );
+		//autoGrabCut(gc, ori, input, predict_s, result);
+		autoGrabCut(gc, ori, input, predict_s, result);
+		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
+
+		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
+		imwrite(output_profile_name, output);
+
 		if(g_setting.enable_evaluation) {
-			Mat ground_truth = imread(profile_filename, cv::IMREAD_UNCHANGED);
-			//TODO
+			evaluate(output_profile_name, profile_filename);
 		}
 
-		if(g_setting.output_profile) {
-			//TODO
-		}
+		delete gc;
+		gc = NULL;
+		delete image;
+		image = NULL;
 	}
 }
 
@@ -569,27 +579,6 @@ void train_batch(const string& input_dir)
 
 	stat.save_data("train.bin");
 	cout<<"training data saved"<<endl;
-
-//	files = get_files("test");
-//
-//	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
-//	{
-//		const string& filename = "test/" + *it;
-//
-//		Mat input, output;
-//		input = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
-//		if(!input.data) {
-//			cerr<<"Can't open "<<filename<<endl;
-//			continue;
-//		}
-//		output = Mat::zeros(input.rows, input.cols, CV_8UC1);
-//		stat.predict(input, output);
-//
-//		string output_filename = filename + ".predit.png";
-//		cout<<"dumping "<<output_filename<<endl;
-//
-//		cv::imwrite(output_filename, output);
-//	}
 
 	cout<<trained<<" image trained in "<<training_cost<<"ms"<<endl;
 }
@@ -624,75 +613,56 @@ void resize(const string& filename, const int long_edge){
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
 }
 
-double autoGrabCut(const Mat& min, Mat& output){
+double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, Mat& output){
 	Timer t;
 	t.restart();
 
 	int width = min.cols;
 	int height = min.rows;
 
+	gc->initialize(0.02*width, 0.01*height, 0.98*width, 0.98*height);
+	cerr<<"grab cut inited"<<endl;
+	gc->fitGMMs();
+	cerr<<"fitGMMs done"<<endl;
 
-	const int PT = 20;
-	const int CL = 1;
-	const double PI = acos(-1);
+	int center_x = width/2;
+	int center_y = height/2;
 
-
-	// portrait
-	if(height > width) {
-		gc->initialize(0.15*width, 0.01*height, 0.85*width, 0.98*height);
-		gc->fitGMMs();
-
-		// CLICK SOME FOREGROUND
-		for(int i=3;i<PT-4;i++){
-			int y = height*(double)i/PT;
-			for(int j=-CL;j<=CL;j++){
-				int x = width/2 + j*4;
-				gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
-			}
-		}
-
-		// CLICK SOME BACKGROUND
-		for(int i=0;i<PT;i++){
-			int x = 0.2*width;
-			int y = height*(double)i/PT;
-			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
-
-			x = 0.8*width;
-			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
-		}
-
-	} else {
-		// landscape
-		gc->initialize(0.15*width, 0.01*height, 0.85*width, 0.98*height);
-		gc->fitGMMs();
-
-
-
-		// CLICK SOME FOREGROUND
-		for(int i=6;i<PT-6;i++){
-			int x = width*(double)i/PT;
-			int y = height/2;
-			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
-		}
-
-		// CLICK SOME FOREGROUND
-		for(int i=3;i<PT-6;i++){
-			int y = height*(double)i/PT;
-			int x = width/2;
-			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapForeground);
+	for(int i=8;i<height-8;i+=32)
+		for(int j=8;j<width-8;j+=32)
+		{
+			int x = j;
+			int y = height - i - 1;
+			int sum = 0;
+			for(int m=-4;m<=4;m++)
+					sum += trimap.at<byte>(i+m,j);
+			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
+			if(sum > 240*8)
+				gc->setTrimap(x-1,y-4,x+1,y+4,TrimapForeground);
+			if(sum < 15*8)
+				gc->setTrimap(x-1,y-4,x+1,y+4,TrimapBackground);
 
 		}
 
-		// CLICK SOME BACKGROUND
-		for(int i=0;i<PT;i++){
-			int x = width*1/3*cos(i*PI/PT) + width/2;
-			int y = height*1/3*sin(i*PI/PT) + height/2;
-			gc->setTrimap(x-2,y-2,x+2,y+2,TrimapBackground);
-		}
-	}
+//	for(int i=2;i<height-2;i++)
+//		for(int j=2;j<width-2;j++)
+//		{
+//			int x = j;
+//			int y = height - i - 1;
+//
+//			int value = trimap.at<byte>(i,j);
+//			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
+//			if(value > 240)
+//				gc->setTrimap(x,y,x+1,y+1,TrimapForeground);
+//			if(value < 15)
+//				gc->setTrimap(x,y,x+1,y+1,TrimapBackground);
+//		}
+
+	cerr<<"trimap inited"<<endl;
 
 	initialized = true;
 	showMask = true;
+
 
 	int max_refine_times = g_setting.max_refine_iterations;
 	int changed = INT_MAX;
@@ -706,7 +676,7 @@ double autoGrabCut(const Mat& min, Mat& output){
 	Mat seg;
 	gc->getSegmentationResult(&seg);
 
-	output = MatHelper::resize(seg, img_ground_truth.cols,  img_ground_truth.rows);
+	output = MatHelper::resize(seg, ori.cols,  ori.rows);
 
 	return cost;
 }
@@ -778,39 +748,39 @@ int main(int argc, char** argv){
 
 			}
 
-			// ==============================================
-			// auto grab cut
-			// ==============================================
-			Mat result;
-			if(g_setting.enable_evaluation)
-			{
-				if(!img_ground_truth.data)
-				{
-					cerr<<" Can't open ground truth profile : "<<profile_name<<endl;
-					return 0;
-				}
-				else
-				{
-					double cost = autoGrabCut(min, result);
-					double score = evaluation(result);
-					cout<<"file = "<<g_setting.matting_filename<<" score = "<<score<<" time = "<<cost<<"ms"<<endl;
-				}
-			}
-			else
-			{
-				double cost = autoGrabCut(min, result);
-				cout<<"file = "<<g_setting.matting_filename<<" time = "<<cost<<"ms"<<endl;
-			}
-
-			// ==============================================
-			// save profile
-			// ==============================================
-			if(g_setting.output_profile)
-			{
-				string output_profile_name = profile_name.substr(0, profile_name.find_last_of(".")) + ".png";
-				cv::imwrite(output_profile_name, result);
-				cerr<<"output profile to "<<output_profile_name<<endl;
-			}
+//			// ==============================================
+//			// auto grab cut
+//			// ==============================================
+//			Mat result;
+//			if(g_setting.enable_evaluation)
+//			{
+//				if(!img_ground_truth.data)
+//				{
+//					cerr<<" Can't open ground truth profile : "<<profile_name<<endl;
+//					return 0;
+//				}
+//				else
+//				{
+//					double cost = autoGrabCut(img_ground_truth, min, result);
+//					double score = evaluation(result);
+//					cout<<"file = "<<g_setting.matting_filename<<" score = "<<score<<" time = "<<cost<<"ms"<<endl;
+//				}
+//			}
+//			else
+//			{
+//				double cost = autoGrabCut(img_ground_truth, min, result);
+//				cout<<"file = "<<g_setting.matting_filename<<" time = "<<cost<<"ms"<<endl;
+//			}
+//
+//			// ==============================================
+//			// save profile
+//			// ==============================================
+//			if(g_setting.output_profile)
+//			{
+//				string output_profile_name = profile_name.substr(0, profile_name.find_last_of(".")) + ".png";
+//				cv::imwrite(output_profile_name, result);
+//				cerr<<"output profile to "<<output_profile_name<<endl;
+//			}
 
 			if(g_setting.enable_gui)
 				glutMainLoop();		//note: this will NEVER return.

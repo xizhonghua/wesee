@@ -23,7 +23,8 @@ using namespace std;
 
 #include "def.h"
 
-#define DIM (6)
+#define DIM (5)
+typedef Vec<int,5> Vec5i;
 
 struct SField{
 	string name;
@@ -62,6 +63,7 @@ public:
 private:
 	int get_aspect_block(double aspect);
 	Vec6i get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_b, int& a_b);
+	Vec5i get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_b);
 	static void limit(int& value, int min, int max) { if(value > max) value = max; if(value<min) value = min;}
 
 	int m_xblocks;

@@ -34,6 +34,7 @@ GrabCut::GrabCut( Image<Color>* image )
 	m_AlphaImage = new Image<Real>(m_w, m_h);
 	m_AlphaImage->fill(0);
 
+	//TODO NOTICE: modified from 5 to 3 by Zhonghua @8/26/2013
 	m_foregroundGMM = new GMM(5);
 	m_backgroundGMM = new GMM(5);
 
@@ -169,8 +170,8 @@ void GrabCut::setTrimap(int x1, int y1, int x2, int y2, const TrimapValue& t)
 	else if (t == TrimapBackground)
 		(*m_hardSegmentation).fillRectangle(x1, y1, x2, y2, SegmentationBackground);
 
-	// Build debugging images
-	buildImages();
+//	// Build debugging images
+//	buildImages();
 }
 
 void GrabCut::display( int t )

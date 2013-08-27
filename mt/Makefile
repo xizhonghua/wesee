@@ -55,7 +55,7 @@ endif
 #--------------------------------------------------------------------
 # OpenCV
 #--------------------------------------------------------------------
-CV_LIB_BASE = -lopencv_core -lopencv_highgui -lopencv_imgproc
+CV_LIB_BASE = -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_photo
 ifeq ($(PLATFORM),MAC_OS_X)
     CV_INCL = -I/opt/local/include
     CV_LIB = -L/opt/local/lib $(CV_LIB_BASE)

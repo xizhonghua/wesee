@@ -531,15 +531,67 @@ void run_batch(const string& input_dir)
 
 		stat.predict(ori, predict);
 
-		imwrite(filename + ".predict.png", predict);
+		Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
+
+		cv::fastNlMeansDenoising(predict_s, predict_s, 11);
+		//blur( predict_s, predict_s, Size(7,7) );
+
+		Mat threshold_output;
+		vector<vector<Point> > contours;
+		vector<Vec4i> hierarchy;
+
+		int thresh = 50;
+		int max_thresh = 255;
+		RNG rng(12345);
+
+		/// Detect edges using Threshold
+		threshold( predict_s, threshold_output, thresh, 255, THRESH_BINARY );
+		/// Find contours
+		findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+
+		/// Approximate contours to polygons + get bounding rects and circles
+		vector<vector<Point> > contours_poly( contours.size() );
+		vector<Rect> boundRect( contours.size() );
+		vector<Point2f>center( contours.size() );
+		vector<float>radius( contours.size() );
+
+		Rect bestBoundRect;
+		for( int i = 0; i < contours.size(); i++ )
+		{
+			approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
+			boundRect[i] = boundingRect( Mat(contours_poly[i]) );
+			if(boundRect[i].area() > bestBoundRect.area()) bestBoundRect = boundRect[i];
+			minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+		}
+
+		double area_thresh = predict_s.rows*predict_s.cols*0.05;
+
+		Scalar WHITE = Scalar( 255, 255, 255 );
+		Scalar BLACK = Scalar( 0, 0, 0 );
+
+//		for( int i = 0; i < contours.size(); i++ )
+//		{
+//			double area = cv::contourArea(contours[i]);
+//			vector<Point> approxShape;
+//			if(area <= area_thresh ) {
+//					approxPolyDP(contours[i], approxShape, arcLength(Mat(contours[i]), true)*0.04, true);
+//					drawContours(predict_s, contours, i, BLACK, CV_FILLED);   // fill BLUE
+//			}
+//		}
+//
+//		cerr<<bestBoundRect<<endl;
+
+		Mat drawing = predict_s.clone();
+
+		rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
+
+		imwrite(filename + ".predict.png", drawing);
 
 		cerr<<"predict file saved to " + filename + ".predict.png"<<endl;
 
-		Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
-
 		Mat result;
 		GrabCut* gc = new GrabCut( image );
-		autoGrabCut(gc, ori, input, predict_s, result);
+		autoGrabCut(gc, ori, input, predict_s, bestBoundRect, result);
 		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
 
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
@@ -617,14 +669,14 @@ void resize(const string& filename, const int long_edge){
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
 }
 
-double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, Mat& output){
+double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, Mat& output){
 	Timer t;
 	t.restart();
 
 	int width = min.cols;
 	int height = min.rows;
 
-	gc->initialize(0.02*width, 0.01*height, 0.98*width, 0.98*height);
+	gc->initialize(boundRect.x, boundRect.y + boundRect.height, boundRect.x + boundRect.width, boundRect.y);
 	cerr<<"grab cut inited"<<endl;
 	gc->fitGMMs();
 	cerr<<"fitGMMs done"<<endl;

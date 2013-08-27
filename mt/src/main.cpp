@@ -533,8 +533,9 @@ void run_batch(const string& input_dir)
 
 		Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
 
-		cv::fastNlMeansDenoising(predict_s, predict_s, 11);
-		//blur( predict_s, predict_s, Size(7,7) );
+		//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
+		//blur( predict_s, predict_s, Size(11,11) );
+		medianBlur(predict_s, predict_s, 9);
 
 		Mat threshold_output;
 		vector<vector<Point> > contours;
@@ -556,12 +557,18 @@ void run_batch(const string& input_dir)
 		vector<float>radius( contours.size() );
 
 		Rect bestBoundRect;
+		vector<Point> betContourPoly;
+		int best_index;
 		for( int i = 0; i < contours.size(); i++ )
 		{
-			approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
+			approxPolyDP( Mat(contours[i]), contours_poly[i], 1, true );
 			boundRect[i] = boundingRect( Mat(contours_poly[i]) );
-			if(boundRect[i].area() > bestBoundRect.area()) bestBoundRect = boundRect[i];
-			minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+			if(boundRect[i].area() > bestBoundRect.area())  {
+				bestBoundRect = boundRect[i];
+				betContourPoly = contours_poly[i];
+				best_index = i;
+			}
+			//minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
 		}
 
 		double area_thresh = predict_s.rows*predict_s.cols*0.05;
@@ -581,9 +588,13 @@ void run_batch(const string& input_dir)
 //
 //		cerr<<bestBoundRect<<endl;
 
+		// ===================================================
+		// drawing
+		// ===================================================
 		Mat drawing = predict_s.clone();
 
 		rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
+		drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
 
 		imwrite(filename + ".predict.png", drawing);
 
@@ -591,7 +602,7 @@ void run_batch(const string& input_dir)
 
 		Mat result;
 		GrabCut* gc = new GrabCut( image );
-		autoGrabCut(gc, ori, input, predict_s, bestBoundRect, result);
+		autoGrabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
 		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
 
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
@@ -669,14 +680,14 @@ void resize(const string& filename, const int long_edge){
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
 }
 
-double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, Mat& output){
+double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output){
 	Timer t;
 	t.restart();
 
 	int width = min.cols;
 	int height = min.rows;
 
-	gc->initialize(boundRect.x, boundRect.y + boundRect.height, boundRect.x + boundRect.width, boundRect.y);
+	gc->initialize(boundRect.x, height - boundRect.y + 1, boundRect.x + boundRect.width, height - boundRect.y - boundRect.height + 1);
 	cerr<<"grab cut inited"<<endl;
 	gc->fitGMMs();
 	cerr<<"fitGMMs done"<<endl;
@@ -689,35 +700,18 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 	int x_blocksSize = width/2/x_blocks - 8;
 	int y_blocksSize = height/2/y_blocks - 8;
 
-//	for(int i=-y_blocks;i<=y_blocks;i++)
-//		for(int j=-x_blocks;j<=x_blocks;j++)
-//		{
-//			int x = center_x + j*x_blocksSize;
-//			int y = center_y + i*y_blocksSize;
-//			int ty = height - y - 1;
-//			int sum = 0;
-//			for(int m=-4;m<=4;m++)
-//					sum += trimap.at<byte>(y+m,x);
-//
-//			//cerr<<"x = "<<x<<" y = "<<y<<" sum = "<<sum<<endl;
-//			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
-//			if(sum > 250*9)
-//				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapForeground);
-//			if(sum < 20*9)
-//				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapBackground);
-//		}
-
-	for(int i=2;i<height-2;i++)
-		for(int j=2;j<width-2;j++)
+	for(int j=boundRect.x;j<boundRect.x + boundRect.width;j+=4)
+		for(int i=boundRect.y;i<boundRect.y + boundRect.height;i+=4)
 		{
 			int x = j;
 			int y = height - i - 1;
 
 			int value = trimap.at<byte>(i,j);
-			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
-			if(value > 240)
+
+			double dist = cv::pointPolygonTest(contour, Point2i(j,i), true);
+			if(dist > 0 && value > 220)
 				gc->setTrimap(x,y,x+1,y+1,TrimapForeground);
-			if(value < 15)
+			if(dist < 0 && value < 20)
 				gc->setTrimap(x,y,x+1,y+1,TrimapBackground);
 		}
 

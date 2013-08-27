@@ -294,6 +294,10 @@ bool parse_arg(int argc, char** argv){
 			if(i+1 < argc) {
 				g_setting.training_dir = argv[++i];
 				g_setting.training_batch_mode = true;
+				if(i+1 < argc && argv[i+1][0] != '-'){
+					stringstream ss(argv[++i]);
+					ss>>g_setting.max_training_images;
+				}
 			}else {
 				return false;
 			}
@@ -500,11 +504,11 @@ void run_batch(const string& input_dir)
 
 	Timer t;
 
-	if(!stat.read_data("train.bin")){
-		cerr<<"Can't open training data."<<endl;
+	if(stat.read_data("train.bin")){
+		cerr<<"Training data loaded in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
 	}
 	else {
-		cerr<<"Training data loaded in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
+		cerr<<"Can't open training data."<<endl;
 	}
 
 	vector<string> files = get_files(input_dir);
@@ -529,20 +533,19 @@ void run_batch(const string& input_dir)
 
 		imwrite(filename + ".predict.png", predict);
 
+		cerr<<"predict file saved to " + filename + ".predict.png"<<endl;
+
 		Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
-//		Mat gt = MatHelper::read_image_ch(profile_filename, 3);
-//		Mat gt_s = MatHelper::resize(gt, LONG_EDGE_PX);
-//
-//		cerr<<"gt_s"<<gt_s.size<<endl;
 
 		Mat result;
 		GrabCut* gc = new GrabCut( image );
-		//autoGrabCut(gc, ori, input, predict_s, result);
 		autoGrabCut(gc, ori, input, predict_s, result);
 		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
 
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
 		imwrite(output_profile_name, output);
+
+		cerr<<"result saved to "<<output_profile_name<<endl;
 
 		if(g_setting.enable_evaluation) {
 			evaluate(output_profile_name, profile_filename);
@@ -572,8 +575,9 @@ void train_batch(const string& input_dir)
 		string training_filename = get_profile_name(filename);
 
 		trained += training(stat, filename, training_filename);
-	}
 
+		if(g_setting.max_training_images != 0 && g_setting.max_training_images <= trained) break;
+	}
 
 	double training_cost = t.getElapsedMilliseconds();
 
@@ -628,20 +632,27 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 	int center_x = width/2;
 	int center_y = height/2;
 
-	for(int i=8;i<height-8;i+=32)
-		for(int j=8;j<width-8;j+=32)
+	int x_blocks = 5;
+	int y_blocks = 5;
+	int x_blocksSize = width/2/x_blocks - 8;
+	int y_blocksSize = height/2/y_blocks - 8;
+
+	for(int i=-y_blocks;i<=y_blocks;i++)
+		for(int j=-x_blocks;j<=x_blocks;j++)
 		{
-			int x = j;
-			int y = height - i - 1;
+			int x = center_x + j*x_blocksSize;
+			int y = center_y + i*y_blocksSize;
+			int ty = height - y - 1;
 			int sum = 0;
 			for(int m=-4;m<=4;m++)
-					sum += trimap.at<byte>(i+m,j);
-			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
-			if(sum > 240*8)
-				gc->setTrimap(x-1,y-4,x+1,y+4,TrimapForeground);
-			if(sum < 15*8)
-				gc->setTrimap(x-1,y-4,x+1,y+4,TrimapBackground);
+					sum += trimap.at<byte>(y+m,x);
 
+			//cerr<<"x = "<<x<<" y = "<<y<<" sum = "<<sum<<endl;
+			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
+			if(sum > 250*9)
+				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapForeground);
+			if(sum < 20*9)
+				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapBackground);
 		}
 
 //	for(int i=2;i<height-2;i++)

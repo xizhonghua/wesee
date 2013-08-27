@@ -11,6 +11,8 @@ public:
 		this->enable_evaluation = false;
 		this->training_mode = false;
 		this->training_batch_mode = false;
+		max_training_images = 0;
+
 		this->matting_batch_mode = false;
 
 		this->matting_mode = false;
@@ -25,6 +27,8 @@ public:
 	string training_filename;
 	string input_dir;
 	string training_dir;
+	int max_training_images;
+
 	bool enable_gui;
 	bool enable_evaluation;
 

@@ -13,19 +13,27 @@ Statistics::Statistics() {
 	this->m_rblocks = 24;
 	this->m_gblocks = 24;
 	this->m_bblocks = 24;
-	this->m_xblocks = 60;
-	this->m_yblocks = 60;
+	this->m_xblocks = 64;
+	this->m_yblocks = 64;
 	//this->m_ablocks = 3;
 	this->m_postive_weight = 1.0;
 
 
-	dim[0] = this->m_bblocks;
-	dim[1] = this->m_gblocks;
-	dim[2] = this->m_rblocks;
+	dim[0] = color_dim[0] = this->m_bblocks;
+	dim[1] = color_dim[1] = this->m_gblocks;
+	dim[2] = color_dim[2] = this->m_rblocks;
 	dim[3] = this->m_xblocks;
 	dim[4] = this->m_yblocks;
+
 	//dim[5] = this->m_ablocks;
-	this->m_data = cv::Mat(DIM, dim, CV_16SC1);
+	this->m_data = cv::Mat(DIM, dim, CV_16S);
+	this->m_data_color = cv::Mat(3, this->color_dim, CV_16S);
+
+	this->m_xy_xblocks = 1024;
+	this->m_xy_yblocks = 1024;
+
+	this->m_data_xy = cv::Mat(this->m_xy_yblocks, this->m_xy_xblocks, CV_16S);
+
 	this->m_stat_count = 0;
 }
 
@@ -34,12 +42,9 @@ Statistics::~Statistics() {
 }
 
 void Statistics::save_data(const string& path){
-	ofstream fs(path.c_str(), std::ofstream::out | std::ofstream::binary);
 	byte s = 0;
-	long sum = 0;
 
 	FILE* fout;
-
 	fout = fopen(path.c_str(), "wb");
 
 	for(int ib=0;ib<this->m_bblocks;ib++)
@@ -47,30 +52,66 @@ void Statistics::save_data(const string& path){
 			for(int ir=0;ir<this->m_rblocks;ir++)
 				for(int ix=0;ix<this->m_xblocks;ix++)
 					for(int iy=0;iy<this->m_yblocks;iy++)
-						//for(int ia=0;ia<this->m_ablocks;ia++)
 						{
 							Vec5i index = this->get_index(ib,ig,ir,ix,iy);
 							s = SIGMOID((double)this->m_data.at<int>(index)/this->m_stat_count)*255;
 							fwrite(&s, 1, 1, fout);
 						}
+
+	Mat mat_xy = Mat(this->m_xy_yblocks, this->m_xy_xblocks, CV_8UC1);
+
+	for(int iy=0;iy<this->m_xy_yblocks;iy++)
+	for(int ix=0;ix<this->m_xy_xblocks;ix++)
+		{
+			mat_xy.at<byte>(iy, ix) = s = SIGMOID((double)this->m_data_xy.at<int>(iy, ix)/this->m_stat_count)*255;
+			fwrite(&s, 1, 1, fout);
+		}
+
+	for(int ib=0;ib<this->m_bblocks;ib++)
+		for(int ig=0;ig<this->m_gblocks;ig++)
+			for(int ir=0;ir<this->m_rblocks;ir++)
+			{
+				s = SIGMOID((double)this->m_data_color.at<int>(ib, ig, ir)/this->m_stat_count)*255;
+				fwrite(&s, 1, 1, fout);
+			}
+
 	fclose(fout);
+
+	imwrite("xy.png", mat_xy);
 }
 
 bool Statistics::read_data(const string& path){
 	FILE* fin = fopen(path.c_str(), "rb");
 	if(!fin) return false;
-	byte t;
+	byte t = 0;
 	for(int ib=0;ib<this->m_bblocks;ib++)
 		for(int ig=0;ig<this->m_gblocks;ig++)
 			for(int ir=0;ir<this->m_rblocks;ir++)
 				for(int ix=0;ix<this->m_xblocks;ix++)
 					for(int iy=0;iy<this->m_yblocks;iy++)
-//						for(int ia=0;ia<this->m_ablocks;ia++)
 						{
 							Vec5i index = this->get_index(ib,ig,ir,ix,iy);
 							fread(&t, 1, 1, fin);
 							this->m_data.at<int>(index) = t;
 						}
+
+	cerr<<this->m_xy_xblocks<<"*"<<this->m_xy_yblocks<<endl;
+
+	for(int ix=0;ix<this->m_xy_xblocks;ix++)
+		for(int iy=0;iy<this->m_xy_yblocks;iy++)
+		{
+			fread(&t, 1, 1, fin);
+			this->m_data_xy.at<int>(iy, ix) = t;
+		}
+
+		for(int ib=0;ib<this->m_bblocks;ib++)
+			for(int ig=0;ig<this->m_gblocks;ig++)
+				for(int ir=0;ir<this->m_rblocks;ir++)
+				{
+					fread(&t, 1, 1, fin);
+					this->m_data_color.at<int>(ib, ig, ir) = t;
+				}
+
 	fclose(fin);
 	return true;
 }
@@ -86,6 +127,10 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 	int width = image.cols;
 	int height = image.rows;
 
+	cerr<<"width = "<<image.cols<<" height = "<<image.rows<<endl;
+
+	cout<<profile.channels()<<endl;
+
 	double aspect = (double)width/height;
 
 	int a_b = this->get_aspect_block(aspect);
@@ -95,7 +140,6 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 	Mat lab_image = image.clone();
 	cv::cvtColor(lab_image, lab_image, CV_BGR2HSV);
 
-	Vec6i index;
 	for(int i=0; i<height; i++)
 		for(int j=0; j<width; j++)
 		{
@@ -105,17 +149,22 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 			G = lab_image.at<Vec3b>(i,j)[1];
 			R = lab_image.at<Vec3b>(i,j)[2];
 
-			int x_b = j*this->m_xblocks/width;
-			int y_b = i*this->m_yblocks/height;
+			int x_b = (double)j*this->m_xblocks/width;
+			int y_b = (double)i*this->m_yblocks/height;
+			int xy_x_b = j*this->m_xy_xblocks/width;
+			int xy_y_b = i*this->m_xy_yblocks/height;
 			int r_b = R*this->m_rblocks/256;
 			int g_b = G*this->m_gblocks/256;
 			int b_b = B*this->m_bblocks/256;
 
 			Vec5i index = this->get_index(b_b,g_b,r_b,x_b,y_b);
 
-			int value = 5*(label == 255 ? this->m_postive_weight : -1);
+			double value = 2*(label == 255 ? this->m_postive_weight : -1.0);
 
 			this->m_data.at<int>(index) += value;
+
+			this->m_data_xy.at<int>(xy_y_b, xy_x_b) += (label == 255 ? 4 : -1);
+			this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b)) += value;
 		}
 }
 
@@ -151,18 +200,22 @@ void Statistics::predict(const Mat& image, Mat& trimap){
 			int r_b = R*this->m_rblocks/256;
 			int g_b = G*this->m_gblocks/256;
 			int b_b = B*this->m_bblocks/256;
+			int xy_x_b = (double)j*this->m_xy_xblocks/width;
+			int xy_y_b = (double)i*this->m_xy_yblocks/height;
 
-			double dist = DISTSQR(j,i,x_center,y_center);
 
 			Vec5i index = this->get_index(b_b,g_b,r_b,x_b,y_b);
+			byte v0 = this->m_data.at<int>(index);
+			byte v1 = this->m_data_xy.at<int>(xy_y_b, xy_x_b);
+			byte v2 = this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b));
 
-			trimap.at<byte>(i,j) = this->m_data.at<int>(index); // * (1 - sqrt(dist / mean_dist));
+			trimap.at<byte>(i,j) = std::min(255, (v0*100 + v1*10 + v2*5)/100);
 		}
 }
 
 
 // ===========================================
-Vec<int,5> Statistics::get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_b)
+Vec<int,5> Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b)
 {
 	Statistics::limit(b_b, 0, this->m_bblocks-1);
 	Statistics::limit(g_b, 0, this->m_gblocks-1);
@@ -172,7 +225,7 @@ Vec<int,5> Statistics::get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_
 
 	return Vec<int,5>(b_b,g_b,r_b,x_b,y_b);
 }
-Vec6i Statistics::get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_b, int& a_b)
+Vec6i Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b, int a_b)
 {
 	Statistics::limit(b_b, 0, this->m_bblocks-1);
 	Statistics::limit(g_b, 0, this->m_gblocks-1);

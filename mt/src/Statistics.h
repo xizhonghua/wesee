@@ -62,8 +62,8 @@ public:
 	bool read_data(const string& path);
 private:
 	int get_aspect_block(double aspect);
-	Vec6i get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_b, int& a_b);
-	Vec5i get_index(int& b_b, int& g_b, int& r_b, int& x_b, int& y_b);
+	Vec6i get_index(int b_b, int g_b, int r_b, int x_b, int y_b, int a_b);
+	Vec5i get_index(int b_b, int g_b, int r_b, int x_b, int y_b);
 	static void limit(int& value, int min, int max) { if(value > max) value = max; if(value<min) value = min;}
 
 	int m_xblocks;
@@ -72,10 +72,15 @@ private:
 	int m_rblocks;
 	int m_gblocks;
 	int m_bblocks;
+	int m_xy_xblocks;
+	int m_xy_yblocks;
 	int m_stat_count;
 	int dim[6];
+	int color_dim[3];
 	double m_postive_weight;
 	Mat m_data;
+	Mat m_data_xy;
+	Mat m_data_color;
 	SField m_aspect;
 	vector<SField> m_channels;
 };

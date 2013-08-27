@@ -535,7 +535,7 @@ void run_batch(const string& input_dir)
 
 		//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
 		//blur( predict_s, predict_s, Size(11,11) );
-		medianBlur(predict_s, predict_s, 9);
+		medianBlur(predict_s, predict_s, 15);
 
 		Mat threshold_output;
 		vector<vector<Point> > contours;
@@ -603,7 +603,10 @@ void run_batch(const string& input_dir)
 		Mat result;
 		GrabCut* gc = new GrabCut( image );
 		autoGrabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
+
+		medianBlur(result, result, 7);
 		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
+
 
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
 		imwrite(output_profile_name, output);
@@ -709,8 +712,12 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 			int value = trimap.at<byte>(i,j);
 
 			double dist = cv::pointPolygonTest(contour, Point2i(j,i), true);
-			if(dist > 0 && value > 220)
-				gc->setTrimap(x,y,x+1,y+1,TrimapForeground);
+			if(dist > 0){
+				if(value > 220)
+					gc->setTrimap(x,y,x+1,y+1,TrimapForeground);
+				else if(value < 10)
+					gc->setTrimap(x,y,x+1,y+1,TrimapBackground);
+			}
 			if(dist < 0 && value < 20)
 				gc->setTrimap(x,y,x+1,y+1,TrimapBackground);
 		}

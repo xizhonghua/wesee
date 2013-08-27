@@ -8,6 +8,7 @@
 #ifndef MATHELPER_H_
 #define MATHELPER_H_
 
+#include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>

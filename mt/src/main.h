@@ -22,7 +22,7 @@ using namespace std;
 #include "Timer.h"
 #include "MatHelper.h"
 
-#define LONG_EDGE_PX 360
+#define LONG_EDGE_PX 320
 
 
 bool parse_arg(int argc, char** argv);

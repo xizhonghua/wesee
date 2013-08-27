@@ -10,13 +10,13 @@
 Statistics::Statistics() {
 
 	this->m_channels.resize(3);
-	this->m_rblocks = 24;
-	this->m_gblocks = 24;
-	this->m_bblocks = 24;
-	this->m_xblocks = 64;
-	this->m_yblocks = 64;
+	this->m_rblocks = 32;
+	this->m_gblocks = 32;
+	this->m_bblocks = 32;
+	this->m_xblocks = 48;
+	this->m_yblocks = 48;
 	//this->m_ablocks = 3;
-	this->m_postive_weight = 1.0;
+	this->m_postive_weight = 1;
 
 
 	dim[0] = color_dim[0] = this->m_bblocks;
@@ -26,13 +26,14 @@ Statistics::Statistics() {
 	dim[4] = this->m_yblocks;
 
 	//dim[5] = this->m_ablocks;
-	this->m_data = cv::Mat(DIM, dim, CV_16S);
-	this->m_data_color = cv::Mat(3, this->color_dim, CV_16S);
+	this->m_data = cv::Mat(DIM, dim, CV_32SC1);
+	this->m_data_count = cv::Mat(DIM, dim, CV_32SC1);
+	this->m_data_color = cv::Mat(3, this->color_dim, CV_32SC1);
 
-	this->m_xy_xblocks = 1024;
-	this->m_xy_yblocks = 1024;
+	this->m_xy_xblocks = 1200;
+	this->m_xy_yblocks = 1200;
 
-	this->m_data_xy = cv::Mat(this->m_xy_yblocks, this->m_xy_xblocks, CV_16S);
+	this->m_data_xy = cv::Mat(this->m_xy_yblocks, this->m_xy_xblocks, CV_32SC1);
 
 	this->m_stat_count = 0;
 }
@@ -54,7 +55,7 @@ void Statistics::save_data(const string& path){
 					for(int iy=0;iy<this->m_yblocks;iy++)
 						{
 							Vec5i index = this->get_index(ib,ig,ir,ix,iy);
-							s = SIGMOID((double)this->m_data.at<int>(index)/this->m_stat_count)*255;
+							s = SIGMOID((double)this->m_data.at<int>(index)/this->m_data_count.at<int>(index))*255;
 							fwrite(&s, 1, 1, fout);
 						}
 
@@ -95,8 +96,6 @@ bool Statistics::read_data(const string& path){
 							this->m_data.at<int>(index) = t;
 						}
 
-	cerr<<this->m_xy_xblocks<<"*"<<this->m_xy_yblocks<<endl;
-
 	for(int ix=0;ix<this->m_xy_xblocks;ix++)
 		for(int iy=0;iy<this->m_xy_yblocks;iy++)
 		{
@@ -127,10 +126,6 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 	int width = image.cols;
 	int height = image.rows;
 
-	cerr<<"width = "<<image.cols<<" height = "<<image.rows<<endl;
-
-	cout<<profile.channels()<<endl;
-
 	double aspect = (double)width/height;
 
 	int a_b = this->get_aspect_block(aspect);
@@ -143,14 +138,14 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 	for(int i=0; i<height; i++)
 		for(int j=0; j<width; j++)
 		{
-			byte label = profile.at<Vec4b>(i,j)[3];
+			byte label = profile.at<byte>(i,j);
 
 			B = lab_image.at<Vec3b>(i,j)[0];
 			G = lab_image.at<Vec3b>(i,j)[1];
 			R = lab_image.at<Vec3b>(i,j)[2];
 
-			int x_b = (double)j*this->m_xblocks/width;
-			int y_b = (double)i*this->m_yblocks/height;
+			int x_b = j*this->m_xblocks/width;
+			int y_b = i*this->m_yblocks/height;
 			int xy_x_b = j*this->m_xy_xblocks/width;
 			int xy_y_b = i*this->m_xy_yblocks/height;
 			int r_b = R*this->m_rblocks/256;
@@ -159,11 +154,12 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 
 			Vec5i index = this->get_index(b_b,g_b,r_b,x_b,y_b);
 
-			double value = 2*(label == 255 ? this->m_postive_weight : -1.0);
+			double value = 3*(label == 255 ? this->m_postive_weight : -1.0);
 
 			this->m_data.at<int>(index) += value;
+			this->m_data_count.at<int>(index)++;
 
-			this->m_data_xy.at<int>(xy_y_b, xy_x_b) += (label == 255 ? 4 : -1);
+			this->m_data_xy.at<int>(xy_y_b, xy_x_b) += (label == 0 ? 2 : -1);
 			this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b)) += value;
 		}
 }
@@ -209,7 +205,7 @@ void Statistics::predict(const Mat& image, Mat& trimap){
 			byte v1 = this->m_data_xy.at<int>(xy_y_b, xy_x_b);
 			byte v2 = this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b));
 
-			trimap.at<byte>(i,j) = std::min(255, (v0*100 + v1*10 + v2*5)/100);
+			trimap.at<byte>(i,j) = v0; //std::max(0, std::min(255, (v0*1000 - v1*2)/1000));
 		}
 }
 

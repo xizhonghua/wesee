@@ -44,8 +44,12 @@ Mat MatHelper::read_image(const string& filename, int long_edge){
 }
 
 
-Mat MatHelper::read_image_ch(const string& string, int ch){
-	Mat input = imread(string.c_str(), cv::IMREAD_UNCHANGED);
+Mat MatHelper::read_image_ch(const string& path, int ch){
+	Mat input = imread(path.c_str(), cv::IMREAD_UNCHANGED);
+	if(ch >= input.channels()){
+		cerr<<" ! Error ! can't read "<<ch<<"th channel from"<<path<<". Only has "<<input.channels()<<endl;
+		return Mat();
+	}
 	vector<Mat> chs;
 	cv::split(input, chs);
 	return chs[ch];

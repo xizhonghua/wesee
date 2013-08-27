@@ -476,7 +476,7 @@ bool training(Statistics& stat, const string& input, const string& profile)
 		return false;
 	}
 
-	img_profile = imread(profile, CV_LOAD_IMAGE_UNCHANGED);
+	img_profile =  MatHelper::read_image_ch(profile, 3);
 	if(!img_profile.data)
 	{
 		cerr << " ! Error ! Could not open or find the image "<<profile<< std::endl ;
@@ -637,37 +637,37 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 	int x_blocksSize = width/2/x_blocks - 8;
 	int y_blocksSize = height/2/y_blocks - 8;
 
-	for(int i=-y_blocks;i<=y_blocks;i++)
-		for(int j=-x_blocks;j<=x_blocks;j++)
-		{
-			int x = center_x + j*x_blocksSize;
-			int y = center_y + i*y_blocksSize;
-			int ty = height - y - 1;
-			int sum = 0;
-			for(int m=-4;m<=4;m++)
-					sum += trimap.at<byte>(y+m,x);
-
-			//cerr<<"x = "<<x<<" y = "<<y<<" sum = "<<sum<<endl;
-			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
-			if(sum > 250*9)
-				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapForeground);
-			if(sum < 20*9)
-				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapBackground);
-		}
-
-//	for(int i=2;i<height-2;i++)
-//		for(int j=2;j<width-2;j++)
+//	for(int i=-y_blocks;i<=y_blocks;i++)
+//		for(int j=-x_blocks;j<=x_blocks;j++)
 //		{
-//			int x = j;
-//			int y = height - i - 1;
+//			int x = center_x + j*x_blocksSize;
+//			int y = center_y + i*y_blocksSize;
+//			int ty = height - y - 1;
+//			int sum = 0;
+//			for(int m=-4;m<=4;m++)
+//					sum += trimap.at<byte>(y+m,x);
 //
-//			int value = trimap.at<byte>(i,j);
+//			//cerr<<"x = "<<x<<" y = "<<y<<" sum = "<<sum<<endl;
 //			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
-//			if(value > 240)
-//				gc->setTrimap(x,y,x+1,y+1,TrimapForeground);
-//			if(value < 15)
-//				gc->setTrimap(x,y,x+1,y+1,TrimapBackground);
+//			if(sum > 250*9)
+//				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapForeground);
+//			if(sum < 20*9)
+//				gc->setTrimap(x-1,ty-4,x+1,ty+4,TrimapBackground);
 //		}
+
+	for(int i=2;i<height-2;i++)
+		for(int j=2;j<width-2;j++)
+		{
+			int x = j;
+			int y = height - i - 1;
+
+			int value = trimap.at<byte>(i,j);
+			//double dist = (i-center_y)*(i-center_y) + (j - center_x)*(j - center_x)
+			if(value > 240)
+				gc->setTrimap(x,y,x+1,y+1,TrimapForeground);
+			if(value < 15)
+				gc->setTrimap(x,y,x+1,y+1,TrimapBackground);
+		}
 
 	cerr<<"trimap inited"<<endl;
 

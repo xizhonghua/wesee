@@ -79,6 +79,7 @@ private:
 	int color_dim[3];
 	double m_postive_weight;
 	Mat m_data;
+	Mat m_data_count;
 	Mat m_data_xy;
 	Mat m_data_color;
 	SField m_aspect;

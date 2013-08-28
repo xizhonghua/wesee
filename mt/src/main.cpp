@@ -469,7 +469,7 @@ bool training(Statistics& stat, const string& input, const string& profile, long
 	double read_file_cost, training_cost;
 	t.restart();
 
-	img_org = imread(input, CV_LOAD_IMAGE_UNCHANGED);
+	img_org = imread(input);
 	if(!img_org.data)
 	{
 		cerr << " ! Error ! Could not open or find the image" <<input<< std::endl ;
@@ -482,6 +482,9 @@ bool training(Statistics& stat, const string& input, const string& profile, long
 		cerr << " ! Error ! Could not open or find the image "<<profile<< std::endl ;
 		return false;
 	}
+
+	img_org = MatHelper::resize(img_org, LONG_EDGE_TRAIN);
+	img_profile = MatHelper::resize(img_profile, LONG_EDGE_TRAIN);
 
 	read_file_cost = t.getElapsedMilliseconds();
 
@@ -544,7 +547,7 @@ void run_batch(const string& input_dir)
 
 		//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
 		//blur( predict_s, predict_s, Size(11,11) );
-		medianBlur(predict_s, predict_s, 11);
+		medianBlur(predict_s, predict_s, 5);
 
 		Mat threshold_output;
 		vector<vector<Point> > contours;
@@ -593,6 +596,7 @@ void run_batch(const string& input_dir)
 			drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
 
 			imwrite(filename + ".predict.png", drawing);
+			imwrite(filename + ".predict-raw.png", predict);
 
 			cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
 		}
@@ -602,6 +606,9 @@ void run_batch(const string& input_dir)
 
 		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
 		medianBlur(output, output, 7);
+
+		cv::threshold(output, output, 128, 255, CV_THRESH_BINARY);
+
 
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
 		imwrite(output_profile_name, output);
@@ -706,18 +713,20 @@ double grabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, c
 
 			if(dist > 0){
 				// inside the contour
-				if(value > 220)
-				{
-					mask.at<byte>(i,j) = cv::GC_PR_FGD;
+				if(value >= 240){
+					mask.at<byte>(i,j) = cv::GC_FGD;
 				}
-				else if(value < 10)
+				else if(value <= 12)
 				{
 					mask.at<byte>(i,j) = cv::GC_PR_BGD;
 				}
 			}
-			if(dist < 0 && value < 20)
+			if(dist < 0)
 			{
-				mask.at<byte>(i,j) = cv::GC_PR_BGD;
+				if(value <= 12)
+					mask.at<byte>(i,j) = cv::GC_BGD;
+				else if(value <= 30)
+					mask.at<byte>(i,j) = cv::GC_PR_BGD;
 			}
 		}
 

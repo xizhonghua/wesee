@@ -10,13 +10,13 @@
 Statistics::Statistics() {
 
 	this->m_channels.resize(3);
-	this->m_rblocks = 48;
-	this->m_gblocks = 48;
-	this->m_bblocks = 48;
-	this->m_xblocks = 32;
-	this->m_yblocks = 32;
+	this->m_rblocks = 24;
+	this->m_gblocks = 24;
+	this->m_bblocks = 24;
+	this->m_xblocks = 24;
+	this->m_yblocks = 24;
 	//this->m_ablocks = 3;
-	this->m_postive_weight = 1;
+	this->m_postive_weight = 1.0;
 
 
 	dim[0] = color_dim[0] = this->m_bblocks;
@@ -135,6 +135,9 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 	Mat lab_image = image.clone();
 	cv::cvtColor(lab_image, lab_image, CV_BGR2HSV);
 
+	int tx = (LONG_EDGE_TRAIN - width)/2;
+	int ty = (LONG_EDGE_TRAIN - height)/2;
+
 	for(int i=0; i<height; i++)
 		for(int j=0; j<width; j++)
 		{
@@ -144,8 +147,8 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 			G = lab_image.at<Vec3b>(i,j)[1];
 			R = lab_image.at<Vec3b>(i,j)[2];
 
-			int x_b = j*this->m_xblocks/width;
-			int y_b = i*this->m_yblocks/height;
+			int x_b = (j)*this->m_xblocks/width;
+			int y_b = (i)*this->m_yblocks/height;
 //			int xy_x_b = j*this->m_xy_xblocks/width;
 //			int xy_y_b = i*this->m_xy_yblocks/height;
 			int r_b = R*this->m_rblocks/256;
@@ -184,6 +187,9 @@ void Statistics::predict(const Mat& image, Mat& trimap){
 	Mat lab_image = image.clone();
 	cv::cvtColor(lab_image, lab_image, CV_BGR2HSV);
 
+	int tx = (LONG_EDGE_PX - width)/2;
+	int ty = (LONG_EDGE_PX - height)/2;
+
 	for(int i=0; i<height; i++)
 		for(int j=0; j<width; j++)
 		{
@@ -191,8 +197,8 @@ void Statistics::predict(const Mat& image, Mat& trimap){
 			G = lab_image.at<Vec3b>(i,j)[1];
 			R = lab_image.at<Vec3b>(i,j)[2];
 
-			int x_b = j*this->m_xblocks/width;
-			int y_b = i*this->m_yblocks/height;
+			int x_b = (j)*this->m_xblocks/width;
+			int y_b = (i)*this->m_yblocks/height;
 			int r_b = R*this->m_rblocks/256;
 			int g_b = G*this->m_gblocks/256;
 			int b_b = B*this->m_bblocks/256;

@@ -21,7 +21,7 @@ using namespace std;
 #include "Timer.h"
 #include "MatHelper.h"
 
-#define LONG_EDGE_PX 480
+
 
 
 bool parse_arg(int argc, char** argv);

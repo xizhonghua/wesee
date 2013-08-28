@@ -525,8 +525,7 @@ void run_batch(const string& input_dir)
 		cerr<<"processing " + filename + "..."<<endl;
 
 		Mat ori = MatHelper::read_image(filename);
-		Mat input;
-		Image<Color>* image = loadForOCV(filename, LONG_EDGE_PX, input);
+		Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
 		Mat predict = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
 
 		stat.predict(ori, predict);
@@ -535,13 +534,13 @@ void run_batch(const string& input_dir)
 
 		//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
 		//blur( predict_s, predict_s, Size(11,11) );
-		medianBlur(predict_s, predict_s, 15);
+		medianBlur(predict_s, predict_s, 11);
 
 		Mat threshold_output;
 		vector<vector<Point> > contours;
 		vector<Vec4i> hierarchy;
 
-		int thresh = 50;
+		int thresh = 60;
 		int max_thresh = 255;
 		RNG rng(12345);
 
@@ -576,18 +575,6 @@ void run_batch(const string& input_dir)
 		Scalar WHITE = Scalar( 255, 255, 255 );
 		Scalar BLACK = Scalar( 0, 0, 0 );
 
-//		for( int i = 0; i < contours.size(); i++ )
-//		{
-//			double area = cv::contourArea(contours[i]);
-//			vector<Point> approxShape;
-//			if(area <= area_thresh ) {
-//					approxPolyDP(contours[i], approxShape, arcLength(Mat(contours[i]), true)*0.04, true);
-//					drawContours(predict_s, contours, i, BLACK, CV_FILLED);   // fill BLUE
-//			}
-//		}
-//
-//		cerr<<bestBoundRect<<endl;
-
 		// ===================================================
 		// drawing
 		// ===================================================
@@ -601,26 +588,19 @@ void run_batch(const string& input_dir)
 		cerr<<"predict file saved to " + filename + ".predict.png"<<endl;
 
 		Mat result;
-		GrabCut* gc = new GrabCut( image );
-		autoGrabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
+		double cost = grabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
 
-		medianBlur(result, result, 7);
 		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
-
+		medianBlur(output, output, 7);
 
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
 		imwrite(output_profile_name, output);
 
-		cerr<<"result saved to "<<output_profile_name<<endl;
+		cerr<<"cost = "<<cost<<" ms"<<" result saved to "<<output_profile_name<<endl;
 
 		if(g_setting.enable_evaluation) {
 			evaluate(output_profile_name, profile_filename);
 		}
-
-		delete gc;
-		gc = NULL;
-		delete image;
-		image = NULL;
 	}
 }
 
@@ -681,6 +661,60 @@ void resize(const string& filename, const int long_edge){
 	cv::imwrite(out_filename, out);
 
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
+}
+
+double grabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output){
+	Timer t;
+	t.restart();
+
+	Mat input, mask;
+	mask.create(min.size(), CV_8UC1);
+	mask = cv::GC_BGD;
+
+	Mat bgdModel;
+	Mat fgdModel;
+
+	int width = min.cols;
+	int height = min.rows;
+
+	mask(boundRect) = cv::GC_PR_FGD;
+
+	for(int j=boundRect.x;j<boundRect.x + boundRect.width;j++)
+		for(int i=boundRect.y;i<boundRect.y + boundRect.height;i++)
+		{
+			int value = trimap.at<byte>(i,j);
+
+			double dist = cv::pointPolygonTest(contour, Point2i(j,i), true);
+
+			if(dist > 0){
+				// inside the contour
+				if(value > 220)
+				{
+					mask.at<byte>(i,j) = cv::GC_PR_FGD;
+				}
+				else if(value < 10)
+				{
+					mask.at<byte>(i,j) = cv::GC_PR_BGD;
+				}
+			}
+			if(dist < 0 && value < 20)
+			{
+				mask.at<byte>(i,j) = cv::GC_PR_BGD;
+			}
+		}
+
+	cv::grabCut(min, mask, boundRect, bgdModel, fgdModel, 5, cv::GC_INIT_WITH_MASK);
+
+	Mat seg = Mat(min.size(), CV_8UC1);
+	seg = 255;
+
+	seg.copyTo(output, mask & 1);
+
+	double cost = t.getElapsedMilliseconds();
+
+	output = MatHelper::resize(output, ori.cols,  ori.rows);
+
+	return cost;
 }
 
 double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output){
@@ -745,7 +779,102 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 	return cost;
 }
 
+Mat src, src_gray;
+Mat dst, detected_edges;
+
+int edgeThresh = 1;
+int lowThreshold;
+int const max_lowThreshold = 100;
+int ratio = 3;
+int kernel_size = 3;
+char* window_name = "Edge Map";
+
+void CannyThreshold(int, void*)
+{
+  /// Reduce noise with a kernel 3x3
+  blur( src_gray, detected_edges, Size(3,3) );
+
+  /// Canny detector
+  Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+
+  /// Using Canny's output as a mask, we display our result
+  dst = Scalar::all(0);
+
+  src.copyTo( dst, detected_edges);
+  imshow( window_name, dst );
+ }
+
+
+bool testCannyThreshold(int argc, char** argv){
+
+
+
+
+	Mat image = cv::imread(argv[1], cv::IMREAD_UNCHANGED);
+
+	/// Load an image
+	src = imread( argv[1] );
+
+	if( !src.data )
+	{ return -1; }
+
+	/// Create a matrix of the same type and size as src (for dst)
+	dst.create( src.size(), src.type() );
+
+	/// Convert the image to grayscale
+	cvtColor( src, src_gray, CV_BGR2GRAY );
+
+	/// Create a window
+	namedWindow( window_name, CV_WINDOW_AUTOSIZE );
+
+	/// Create a Trackbar for user to enter threshold
+	cv::createTrackbar( "Min Threshold:", window_name, &lowThreshold, max_lowThreshold, CannyThreshold );
+
+	/// Reduce noise with a kernel 3x3
+	blur( src_gray, detected_edges, Size(3,3) );
+
+	/// Canny detector
+	Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+
+	/// Using Canny's output as a mask, we display our result
+	dst = Scalar::all(0);
+
+	src.copyTo( dst, detected_edges);
+	imshow( window_name, dst );
+
+	/// Wait until user exit program by pressing a key
+	waitKey(0);
+
+	return true;
+}
+
+bool testCrabCut(int argc, char** argv){
+	Mat input = MatHelper::read_image(argv[1], 640);
+	Mat mask;
+	mask.create( input.size(), CV_8UC1);
+	Mat bgdModel;
+	Mat fgdModel;
+	Rect r = Rect(300, 200, 200, 200);
+	cv::grabCut(input, mask, r, bgdModel, fgdModel, 1, cv::GC_INIT_WITH_RECT);
+	Mat output(input.size(), CV_8UC1);
+	output = 255;
+	Mat res;
+	output.copyTo( res, mask & 1 );
+	imshow( "grabcut", res );
+
+		/// Wait until user exit program by pressing a key
+	waitKey(0);
+
+
+	return true;
+}
+
 int main(int argc, char** argv){
+
+//	if(testCrabCut(argc, argv)){
+//		return 0;
+//	}
+
 
 	if(!parse_arg(argc, argv)){
 		print_usage(argc, argv);
@@ -781,7 +910,7 @@ int main(int argc, char** argv){
 
 		string profile_name = get_profile_name(g_setting.matting_filename);
 
-		Image<Color>* image = loadForOCV( g_setting.matting_filename, LONG_EDGE_PX, min);
+		Image<Color>* image = loadForOCV( g_setting.matting_filename, LONG_EDGE_PX);
 
 		img_ground_truth = imread(profile_name, cv::IMREAD_UNCHANGED);
 

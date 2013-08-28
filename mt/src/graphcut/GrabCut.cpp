@@ -113,6 +113,7 @@ int GrabCut::refineOnce()
 	initGraph();
 	if (m_graph)
 		flow = m_graph->maxflow();
+	return 0;
 	
 	int changed = updateHardSegmentation();
 	fprintf(stderr, "%d pixels changed segmentation (max flow = %f)\n", changed, flow );

@@ -54,6 +54,6 @@ Image<Color>* load( std::string file_name );
 Image<Color>* loadFromPGM( std::string file_name );
 Image<Color>* loadFromPPM( std::string file_name );
 
-Image<Color>* loadForOCV(std::string file_name, const int long_edge, Mat& im);
+Image<Color>* loadForOCV(std::string file_name, const int long_edge);
 
 #endif //COLOR_H

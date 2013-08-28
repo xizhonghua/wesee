@@ -51,16 +51,14 @@ Image<Color>* load( std::string file_name )
 	}
 }
 
-Image<Color>* loadForOCV(std::string file_name, const int long_edge, Mat& im)
+Image<Color>* loadForOCV(std::string file_name, const int long_edge)
 {
-	Mat out = imread(file_name.c_str(), CV_LOAD_IMAGE_COLOR);   // Read the file
+	Mat im = MatHelper::read_image(file_name, long_edge);
 
-	if(!out.data){
+	if(!im.data){
 		cout<<"filed to load image "<<file_name<<endl;
 		return NULL;
 	}
-
-	im = MatHelper::resize(out, long_edge);
 
 	Image<Color>* image = new Image<Color>(im.cols, im.rows);
 

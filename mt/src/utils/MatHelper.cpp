@@ -39,7 +39,7 @@ Mat MatHelper::resize(const Mat& ori, int width, int height){
 
 Mat MatHelper::read_image(const string& filename, int long_edge){
 	Mat input = imread(filename, cv::IMREAD_UNCHANGED);
-	if(long_edge == 0) return input;
+	if(long_edge == 0 || !input.data) return input;
 	return MatHelper::resize(input, long_edge);
 }
 

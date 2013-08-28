@@ -280,7 +280,7 @@ bool parse_arg(int argc, char** argv){
 			}
 		}
 		else if(arg == "-op") {
-			g_setting.output_profile = true;
+			g_setting.output_prediction = true;
 		}
 		else if(arg == "-t"){
 			if(i+1 < argc){
@@ -360,7 +360,7 @@ void print_usage(int argc, char** argv){
 	cout<<"\t[-t filename]: train single image"<<endl;
 	cout<<"\t[-ev profile ground_truth]: evaluation profile with ground_truth"<<endl;
 	cout<<"\t[-ta input_dir]: train entire directory"<<endl;
-	cout<<"\t[-op]: output profile, should use with [-m]"<<endl;
+	cout<<"\t[-op]: output predition map"<<endl;
 	cout<<"\t[-resize filename [long_edge=360]]: resize the image"<<endl;
 	cout<<"\t[input_dir]: mat entire directory"<<endl;
 	cout<<"\t[-h]: show this message"<<endl;
@@ -462,7 +462,7 @@ bool matting(const string& input, const string& output, Mat* min, Mat* mout, con
 	return true;
 }
 
-bool training(Statistics& stat, const string& input, const string& profile)
+bool training(Statistics& stat, const string& input, const string& profile, long& pixel_count)
 {
 	Timer t;
 	Mat img_org, img_profile;
@@ -495,34 +495,39 @@ bool training(Statistics& stat, const string& input, const string& profile)
 		<<" size = "<<img_org.rows<<"x"<<img_org.cols
 		<<" read = "<<read_file_cost<<"ms"<<" train =  "<<training_cost<<"ms"<<endl;
 
+	pixel_count += img_org.rows * img_org.cols;
+
 	return true;
 }
 
 void run_batch(const string& input_dir)
 {
+
+	cerr<<"========================== WESEE ============================"<<endl;
+	cerr<<"- Batch starting"<<endl;
+
 	Statistics stat;
 
 	Timer t;
 
 	if(stat.read_data("train.bin")){
-		cerr<<"Training data loaded in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
+		cerr<<"- Training data loaded in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
 	}
 	else {
-		cerr<<"Can't open training data."<<endl;
+		cerr<<"! Error ! Can't open training data."<<endl;
+		return;
 	}
-
 	vector<string> files = get_files(input_dir);
 
-	cerr<<files.size()<<" job(s) got"<<endl;
+	cerr<<"- "<<files.size()<<" job(s) got"<<endl;
 
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
-
 		const string filename = input_dir + "/" + *it;
 		const string profile_filename = get_profile_name(filename);
 		string output_filename = get_profile_name(*it);
 
-		cerr<<"processing " + filename + "..."<<endl;
+		cerr<<"- Matting " + filename + "..."<<endl;
 
 		Mat ori = imread(filename);
 
@@ -572,25 +577,25 @@ void run_batch(const string& input_dir)
 				betContourPoly = contours_poly[i];
 				best_index = i;
 			}
-			//minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
 		}
 
-		double area_thresh = predict_s.rows*predict_s.cols*0.05;
+		if(g_setting.output_prediction)
+		{
+			Scalar WHITE = Scalar( 255, 255, 255 );
+			Scalar BLACK = Scalar( 0, 0, 0 );
 
-		Scalar WHITE = Scalar( 255, 255, 255 );
-		Scalar BLACK = Scalar( 0, 0, 0 );
+			// ===================================================
+			// drawing
+			// ===================================================
+			Mat drawing = predict_s.clone();
 
-		// ===================================================
-		// drawing
-		// ===================================================
-		Mat drawing = predict_s.clone();
+			rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
+			drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
 
-		rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
-		drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
+			imwrite(filename + ".predict.png", drawing);
 
-		imwrite(filename + ".predict.png", drawing);
-
-		cerr<<"predict file saved to " + filename + ".predict.png"<<endl;
+			cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
+		}
 
 		Mat result;
 		double cost = grabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
@@ -601,12 +606,15 @@ void run_batch(const string& input_dir)
 		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
 		imwrite(output_profile_name, output);
 
-		cerr<<"cost = "<<cost<<" ms"<<" result saved to "<<output_profile_name<<endl;
+		cerr<<"- Time = "<<cost<<" ms"<<" | Result saved to "<<output_profile_name<<endl;
 
 		if(g_setting.enable_evaluation) {
 			evaluate(output_profile_name, profile_filename);
 		}
 	}
+
+	cerr<<"- Batch done"<<endl;
+	cerr<<"========================== WESEE ============================"<<endl;
 }
 
 void train_batch(const string& input_dir)
@@ -619,13 +627,14 @@ void train_batch(const string& input_dir)
 	vector<string> files = get_files(input_dir);
 
 	int trained = 0;
+	long pixel_count = 0;
 
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
 		const string& filename = input_dir + "/" + *it;
 		string training_filename = get_profile_name(filename);
 
-		trained += training(stat, filename, training_filename);
+		trained += training(stat, filename, training_filename, pixel_count);
 
 		if(g_setting.max_training_images != 0 && g_setting.max_training_images <= trained) break;
 	}
@@ -633,9 +642,9 @@ void train_batch(const string& input_dir)
 	double training_cost = t.getElapsedMilliseconds();
 
 	stat.save_data("train.bin");
-	cout<<"training data saved"<<endl;
+	cout<<"- Training data saved"<<endl;
 
-	cout<<trained<<" image trained in "<<training_cost<<"ms"<<endl;
+	cout<<trained<<" images with "<< pixel_count <<" pixels trained in "<<training_cost<<"ms"<<endl;
 }
 
 void evaluate(const string& profile, const string& ground_truth){
@@ -647,9 +656,13 @@ void evaluate(const string& profile, const string& ground_truth){
 	ch.clear();
 	split(g, ch);
 	g = ch.back();
+	if(ch .size() != 4) {
+		cerr << "! Warning ! "<<ground_truth<<" doest not contain alpha channel!"<<endl;
+		g = 255 - g;
+	}
 	Matting m;
 	double score = m.evaluate(g, p);
-	printf("score = %.4lf profile = %s ground_truth = %s\n", score, profile.c_str(), ground_truth.c_str());
+	printf("- Score = %.4lf | Profile = %s | Ground_truth = %s\n", score, profile.c_str(), ground_truth.c_str());
 }
 
 void resize(const string& filename, const int long_edge){
@@ -710,7 +723,7 @@ double grabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, c
 
 	cv::cvtColor(min, input, CV_BGR2Lab);
 
-	cv::grabCut(input, mask, boundRect, bgdModel, fgdModel, 5, cv::GC_INIT_WITH_MASK);
+	cv::grabCut(input, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
 
 	Mat seg = Mat(min.size(), CV_8UC1);
 	seg = 255;
@@ -786,102 +799,7 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 	return cost;
 }
 
-Mat src, src_gray;
-Mat dst, detected_edges;
-
-int edgeThresh = 1;
-int lowThreshold;
-int const max_lowThreshold = 100;
-int ratio = 3;
-int kernel_size = 3;
-char* window_name = "Edge Map";
-
-void CannyThreshold(int, void*)
-{
-  /// Reduce noise with a kernel 3x3
-  blur( src_gray, detected_edges, Size(3,3) );
-
-  /// Canny detector
-  Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
-
-  /// Using Canny's output as a mask, we display our result
-  dst = Scalar::all(0);
-
-  src.copyTo( dst, detected_edges);
-  imshow( window_name, dst );
- }
-
-
-bool testCannyThreshold(int argc, char** argv){
-
-
-
-
-	Mat image = cv::imread(argv[1], cv::IMREAD_UNCHANGED);
-
-	/// Load an image
-	src = imread( argv[1] );
-
-	if( !src.data )
-	{ return -1; }
-
-	/// Create a matrix of the same type and size as src (for dst)
-	dst.create( src.size(), src.type() );
-
-	/// Convert the image to grayscale
-	cvtColor( src, src_gray, CV_BGR2GRAY );
-
-	/// Create a window
-	namedWindow( window_name, CV_WINDOW_AUTOSIZE );
-
-	/// Create a Trackbar for user to enter threshold
-	cv::createTrackbar( "Min Threshold:", window_name, &lowThreshold, max_lowThreshold, CannyThreshold );
-
-	/// Reduce noise with a kernel 3x3
-	blur( src_gray, detected_edges, Size(3,3) );
-
-	/// Canny detector
-	Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
-
-	/// Using Canny's output as a mask, we display our result
-	dst = Scalar::all(0);
-
-	src.copyTo( dst, detected_edges);
-	imshow( window_name, dst );
-
-	/// Wait until user exit program by pressing a key
-	waitKey(0);
-
-	return true;
-}
-
-bool testCrabCut(int argc, char** argv){
-	Mat input = MatHelper::read_image(argv[1], 640);
-	Mat mask;
-	mask.create( input.size(), CV_8UC1);
-	Mat bgdModel;
-	Mat fgdModel;
-	Rect r = Rect(300, 200, 200, 200);
-	cv::grabCut(input, mask, r, bgdModel, fgdModel, 1, cv::GC_INIT_WITH_RECT);
-	Mat output(input.size(), CV_8UC1);
-	output = 255;
-	Mat res;
-	output.copyTo( res, mask & 1 );
-	imshow( "grabcut", res );
-
-		/// Wait until user exit program by pressing a key
-	waitKey(0);
-
-
-	return true;
-}
-
 int main(int argc, char** argv){
-
-//	if(testCrabCut(argc, argv)){
-//		return 0;
-//	}
-
 
 	if(!parse_arg(argc, argv)){
 		print_usage(argc, argv);

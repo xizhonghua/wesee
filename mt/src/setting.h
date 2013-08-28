@@ -16,9 +16,10 @@ public:
 		this->matting_batch_mode = false;
 
 		this->matting_mode = false;
-		this->max_refine_iterations = 5;
+		this->max_refine_iterations = 3;
 
-		this->output_profile = false;
+		this->output_prediction = false;
+		this->output_profile = true;
 
 		this->resize_mode = false;
 		this->evaluation_mode = false;
@@ -40,6 +41,7 @@ public:
 	int max_refine_iterations;
 
 	bool output_profile;
+	bool output_prediction;
 
 	bool evaluation_mode;
 	string profile_filename;

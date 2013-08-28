@@ -33,7 +33,7 @@ vector<string> get_files(const string& input_dir);
 
 void evaluate(const string& profile, const string& ground_truth);
 bool matting(const string& input, const string& output, Mat* min, Mat* out, const string* ground_truth, double* score);
-bool training(Statistics& stat, const string& input, const string& profile);
+bool training(Statistics& stat, const string& input, const string& profile, long& pixel_count);
 double grabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output);
 double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output);
 void run_batch(const string& input_dir);

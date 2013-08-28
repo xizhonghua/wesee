@@ -10,11 +10,11 @@
 Statistics::Statistics() {
 
 	this->m_channels.resize(3);
-	this->m_rblocks = 32;
-	this->m_gblocks = 32;
-	this->m_bblocks = 32;
-	this->m_xblocks = 48;
-	this->m_yblocks = 48;
+	this->m_rblocks = 48;
+	this->m_gblocks = 48;
+	this->m_bblocks = 48;
+	this->m_xblocks = 32;
+	this->m_yblocks = 32;
 	//this->m_ablocks = 3;
 	this->m_postive_weight = 1;
 
@@ -59,26 +59,26 @@ void Statistics::save_data(const string& path){
 							fwrite(&s, 1, 1, fout);
 						}
 
-	Mat mat_xy = Mat(this->m_xy_yblocks, this->m_xy_xblocks, CV_8UC1);
-
-	for(int iy=0;iy<this->m_xy_yblocks;iy++)
-	for(int ix=0;ix<this->m_xy_xblocks;ix++)
-		{
-			mat_xy.at<byte>(iy, ix) = s = SIGMOID((double)this->m_data_xy.at<int>(iy, ix)/this->m_stat_count)*255;
-			fwrite(&s, 1, 1, fout);
-		}
-
-	for(int ib=0;ib<this->m_bblocks;ib++)
-		for(int ig=0;ig<this->m_gblocks;ig++)
-			for(int ir=0;ir<this->m_rblocks;ir++)
-			{
-				s = SIGMOID((double)this->m_data_color.at<int>(ib, ig, ir)/this->m_stat_count)*255;
-				fwrite(&s, 1, 1, fout);
-			}
+//	Mat mat_xy = Mat(this->m_xy_yblocks, this->m_xy_xblocks, CV_8UC1);
+//
+//	for(int iy=0;iy<this->m_xy_yblocks;iy++)
+//	for(int ix=0;ix<this->m_xy_xblocks;ix++)
+//		{
+//			mat_xy.at<byte>(iy, ix) = s = SIGMOID((double)this->m_data_xy.at<int>(iy, ix)/this->m_stat_count)*255;
+//			fwrite(&s, 1, 1, fout);
+//		}
+//
+//	for(int ib=0;ib<this->m_bblocks;ib++)
+//		for(int ig=0;ig<this->m_gblocks;ig++)
+//			for(int ir=0;ir<this->m_rblocks;ir++)
+//			{
+//				s = SIGMOID((double)this->m_data_color.at<int>(ib, ig, ir)/this->m_stat_count)*255;
+//				fwrite(&s, 1, 1, fout);
+//			}
 
 	fclose(fout);
 
-	imwrite("xy.png", mat_xy);
+//	imwrite("xy.png", mat_xy);
 }
 
 bool Statistics::read_data(const string& path){
@@ -96,20 +96,20 @@ bool Statistics::read_data(const string& path){
 							this->m_data.at<int>(index) = t;
 						}
 
-	for(int ix=0;ix<this->m_xy_xblocks;ix++)
-		for(int iy=0;iy<this->m_xy_yblocks;iy++)
-		{
-			fread(&t, 1, 1, fin);
-			this->m_data_xy.at<int>(iy, ix) = t;
-		}
-
-		for(int ib=0;ib<this->m_bblocks;ib++)
-			for(int ig=0;ig<this->m_gblocks;ig++)
-				for(int ir=0;ir<this->m_rblocks;ir++)
-				{
-					fread(&t, 1, 1, fin);
-					this->m_data_color.at<int>(ib, ig, ir) = t;
-				}
+//	for(int ix=0;ix<this->m_xy_xblocks;ix++)
+//		for(int iy=0;iy<this->m_xy_yblocks;iy++)
+//		{
+//			fread(&t, 1, 1, fin);
+//			this->m_data_xy.at<int>(iy, ix) = t;
+//		}
+//
+//		for(int ib=0;ib<this->m_bblocks;ib++)
+//			for(int ig=0;ig<this->m_gblocks;ig++)
+//				for(int ir=0;ir<this->m_rblocks;ir++)
+//				{
+//					fread(&t, 1, 1, fin);
+//					this->m_data_color.at<int>(ib, ig, ir) = t;
+//				}
 
 	fclose(fin);
 	return true;
@@ -146,8 +146,8 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 
 			int x_b = j*this->m_xblocks/width;
 			int y_b = i*this->m_yblocks/height;
-			int xy_x_b = j*this->m_xy_xblocks/width;
-			int xy_y_b = i*this->m_xy_yblocks/height;
+//			int xy_x_b = j*this->m_xy_xblocks/width;
+//			int xy_y_b = i*this->m_xy_yblocks/height;
 			int r_b = R*this->m_rblocks/256;
 			int g_b = G*this->m_gblocks/256;
 			int b_b = B*this->m_bblocks/256;
@@ -159,8 +159,8 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 			this->m_data.at<int>(index) += value;
 			this->m_data_count.at<int>(index)++;
 
-			this->m_data_xy.at<int>(xy_y_b, xy_x_b) += (label == 0 ? 2 : -1);
-			this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b)) += value;
+//			this->m_data_xy.at<int>(xy_y_b, xy_x_b) += (label == 0 ? 2 : -1);
+//			this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b)) += value;
 		}
 }
 
@@ -196,14 +196,14 @@ void Statistics::predict(const Mat& image, Mat& trimap){
 			int r_b = R*this->m_rblocks/256;
 			int g_b = G*this->m_gblocks/256;
 			int b_b = B*this->m_bblocks/256;
-			int xy_x_b = (double)j*this->m_xy_xblocks/width;
-			int xy_y_b = (double)i*this->m_xy_yblocks/height;
+//			int xy_x_b = (double)j*this->m_xy_xblocks/width;
+//			int xy_y_b = (double)i*this->m_xy_yblocks/height;
 
 
 			Vec5i index = this->get_index(b_b,g_b,r_b,x_b,y_b);
 			byte v0 = this->m_data.at<int>(index);
-			byte v1 = this->m_data_xy.at<int>(xy_y_b, xy_x_b);
-			byte v2 = this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b));
+//			byte v1 = this->m_data_xy.at<int>(xy_y_b, xy_x_b);
+//			byte v2 = this->m_data_color.at<int>(Vec3i(b_b, g_b, r_b));
 
 			trimap.at<byte>(i,j) = v0; //std::max(0, std::min(255, (v0*1000 - v1*2)/1000));
 		}

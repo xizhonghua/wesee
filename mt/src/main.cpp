@@ -524,7 +524,12 @@ void run_batch(const string& input_dir)
 
 		cerr<<"processing " + filename + "..."<<endl;
 
-		Mat ori = MatHelper::read_image(filename);
+		Mat ori = imread(filename);
+
+		if(ori.type() != CV_8UC3) {
+			cerr<<"! Error ! unsupported data type = "<<ori.type()<<"!"<<endl;
+			continue;
+		}
 		Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
 		Mat predict = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
 
@@ -703,7 +708,9 @@ double grabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, c
 			}
 		}
 
-	cv::grabCut(min, mask, boundRect, bgdModel, fgdModel, 5, cv::GC_INIT_WITH_MASK);
+	cv::cvtColor(min, input, CV_BGR2Lab);
+
+	cv::grabCut(input, mask, boundRect, bgdModel, fgdModel, 5, cv::GC_INIT_WITH_MASK);
 
 	Mat seg = Mat(min.size(), CV_8UC1);
 	seg = 255;

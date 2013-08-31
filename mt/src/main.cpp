@@ -179,7 +179,7 @@ double evaluation(Mat& im){
 	Mat resultToShow = MatHelper::resize(im, LONG_EDGE_PX);
 
 	if(!g_setting.enable_gui) return score;
-
+/*
 	cv::namedWindow("matting result", CV_WINDOW_AUTOSIZE );
 	cv::imshow("matting result", resultToShow);
 	cv::moveWindow("matting result", 100 + ground_truth_to_display.cols + 20, 100);
@@ -190,6 +190,8 @@ double evaluation(Mat& im){
 	cerr<<"score "<<score<<endl;
 
 	return score;
+*/
+	return 0;
 }
 
 void keyboard(unsigned char key, int x, int y)

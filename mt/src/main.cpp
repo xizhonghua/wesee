@@ -345,6 +345,18 @@ bool parse_arg(int argc, char** argv){
 				g_setting.resize_long_edge = 240;
 			}
 		}
+		else if(arg == "-test") {
+			if(i+2 < argc){
+				g_setting.test_mode = true;
+				g_setting.test_profilename = argv[++i];
+				g_setting.test_filename = argv[++i];
+
+			}
+			else {
+				return false;
+			}
+
+		}
 		else
 		{
 			g_setting.matting_batch_mode=true;
@@ -970,6 +982,11 @@ int main(int argc, char** argv){
 				glutMainLoop();		//note: this will NEVER return.
 		}
 
+
+	}
+
+	if(g_setting.test_mode){
+		salient(g_setting.test_profilename, g_setting.test_filename);
 	}
 
 	return 0;

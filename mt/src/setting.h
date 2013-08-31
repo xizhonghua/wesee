@@ -55,6 +55,10 @@ public:
 	bool resize_mode;
 	string resize_filename;
 	int resize_long_edge;
+
+	bool test_mode;
+	string test_filename;
+	string test_profilename;
 };
 
 #endif /*  __SETTING_H__ */

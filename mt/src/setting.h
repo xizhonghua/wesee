@@ -23,9 +23,11 @@ public:
 
 		this->resize_mode = false;
 		this->evaluation_mode = false;
+
+		this->training_database_filename = "train.bin";
 	}
 	string matting_filename;
-	string training_filename;
+
 	string input_dir;
 	string training_dir;
 	int max_training_images;
@@ -35,6 +37,9 @@ public:
 
 	bool training_mode;
 	bool training_batch_mode;
+	string training_filename;
+	string training_database_filename;
+
 	bool matting_batch_mode;
 
 	bool matting_mode;

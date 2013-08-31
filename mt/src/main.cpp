@@ -302,6 +302,13 @@ bool parse_arg(int argc, char** argv){
 				return false;
 			}
 		}
+		else if(arg == "-td") {
+			if(i+1 < argc ) {
+				g_setting.training_database_filename = argv[++i];
+			} else {
+				return false;
+			}
+		}
 		else if(arg == "-e") {
 			g_setting.enable_evaluation = true;
 		}
@@ -357,9 +364,9 @@ void print_usage(int argc, char** argv){
 	cout<<"\t[-e]: enable evaluation, will NOT save result to file"<<endl;
 	cout<<"\t[-m filename]: mat single image"<<endl;
 	cout<<"\t[-mr iterations]: max refine iterations"<<endl;
-	cout<<"\t[-t filename]: train single image"<<endl;
 	cout<<"\t[-ev profile ground_truth]: evaluation profile with ground_truth"<<endl;
 	cout<<"\t[-ta input_dir]: train entire directory"<<endl;
+	cout<<"\t[-td filename]: use custom training database"<<endl;
 	cout<<"\t[-op]: output predition map"<<endl;
 	cout<<"\t[-resize filename [long_edge=360]]: resize the image"<<endl;
 	cout<<"\t[input_dir]: mat entire directory"<<endl;
@@ -513,8 +520,8 @@ void run_batch(const string& input_dir)
 
 	Timer t;
 
-	if(stat.read_data("train.bin")){
-		cerr<<"- Training data loaded in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
+	if(stat.read_data(g_setting.training_database_filename)){
+		cerr<<"- Training data loaded from " << g_setting.training_database_filename <<" in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
 	}
 	else {
 		cerr<<"! Error ! Can't open training data."<<endl;
@@ -553,7 +560,7 @@ void run_batch(const string& input_dir)
 		vector<vector<Point> > contours;
 		vector<Vec4i> hierarchy;
 
-		int thresh = 60;
+		int thresh = 70;
 		int max_thresh = 255;
 		RNG rng(12345);
 
@@ -648,8 +655,8 @@ void train_batch(const string& input_dir)
 
 	double training_cost = t.getElapsedMilliseconds();
 
-	stat.save_data("train.bin");
-	cout<<"- Training data saved"<<endl;
+	stat.save_data(g_setting.training_database_filename);
+	cout<<"- Training data saved to "<<g_setting.training_database_filename<<endl;
 
 	cout<<trained<<" images with "<< pixel_count <<" pixels trained in "<<training_cost<<"ms"<<endl;
 }
@@ -808,8 +815,56 @@ double autoGrabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trima
 	return cost;
 }
 
-int main(int argc, char** argv){
+void salient(const string& salient_path, const string& input_path){
 
+
+	Mat salient = imread(salient_path, IMREAD_UNCHANGED);
+	Mat input = imread(input_path);
+	cerr<<"salient file:"<<salient_path<<" size = "<<salient.size()<<endl;
+	cerr<<"input_path:"<<input_path<<" size = "<<input.size()<<endl;
+	int org_width = input.cols;
+	int org_height = input.rows;
+	input = MatHelper::resize(input, salient.cols, salient.rows);
+
+//	imwrite(salient_path + ".s.png", MatHelper::resize(salient, org_width, org_height));
+//	evaluate(salient_path + ".s.png", get_profile_name(input_path));
+//	return;
+
+	Mat mask;
+	mask.create(input.size(), CV_8UC1);
+	mask = cv::GC_PR_FGD;
+
+	Mat bgdModel;
+	Mat fgdModel;
+
+	int width = salient.cols;
+	int height = salient.rows;
+
+	for(int i=0;i<height;i++)
+		for(int j=0;j<width;j++)
+		{
+//			double s = (double)rand()/RAND_MAX;
+//			if(s>0.5) continue;
+			int value = salient.at<byte>(i,j);
+			mask.at<byte>(i,j) = (value>127) ? cv::GC_PR_FGD : cv::GC_PR_BGD;
+		}
+
+	Rect boundRect;
+	cv::grabCut(input, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
+
+	Mat seg = Mat(input.size(), CV_8UC1, Scalar(255));
+	Mat output;
+	seg.copyTo(output, mask & 1);
+
+	output = MatHelper::resize(output, org_width, org_height);
+
+	string output_path = salient_path + ".salient-out.png";
+	imwrite(output_path, output);
+
+	evaluate(output_path, get_profile_name(input_path));
+}
+
+int main(int argc, char** argv){
 	if(!parse_arg(argc, argv)){
 		print_usage(argc, argv);
 		return 0;

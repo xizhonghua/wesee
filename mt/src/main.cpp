@@ -547,97 +547,112 @@ void run_batch(const string& input_dir)
 
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
-		const string filename = input_dir + "/" + *it;
-		const string profile_filename = get_profile_name(filename);
-		string output_filename = get_profile_name(*it);
+		try {
+			const string filename = input_dir + "/" + *it;
+			const string profile_filename = get_profile_name(filename);
+			string output_filename = get_profile_name(*it);
 
-		cerr<<"- Matting " + filename + "..."<<endl;
+			cerr<<"- Matting " + filename + "..."<<endl;
 
-		Mat ori = imread(filename);
+			Mat ori = imread(filename);
 
-		if(ori.type() != CV_8UC3) {
-			cerr<<"! Error ! unsupported data type = "<<ori.type()<<"!"<<endl;
-			continue;
-		}
-		Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
-		Mat predict = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
+			if(ori.type() != CV_8UC3) {
+				cerr<<"! Error ! unsupported data type = "<<ori.type()<<"!"<<endl;
+				continue;
+			}
+			Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
+			Mat predict = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
 
-		stat.predict(ori, predict);
+			stat.predict(ori, predict);
 
-		Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
+			Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
 
-		//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
-		//blur( predict_s, predict_s, Size(11,11) );
-		medianBlur(predict_s, predict_s, 5);
+			//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
+			//blur( predict_s, predict_s, Size(11,11) );
+			medianBlur(predict_s, predict_s, 5);
 
-		Mat threshold_output;
-		vector<vector<Point> > contours;
-		vector<Vec4i> hierarchy;
+			Mat threshold_output;
+			vector<vector<Point> > contours;
+			vector<Vec4i> hierarchy;
 
-		int thresh = 70;
-		int max_thresh = 255;
-		RNG rng(12345);
+			int thresh = 70;
+			int max_thresh = 255;
+			RNG rng(12345);
 
-		/// Detect edges using Threshold
-		threshold( predict_s, threshold_output, thresh, 255, THRESH_BINARY );
-		/// Find contours
-		findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+			/// Detect edges using Threshold
+			threshold( predict_s, threshold_output, thresh, 255, THRESH_BINARY );
+			/// Find contours
+			findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-		/// Approximate contours to polygons + get bounding rects and circles
-		vector<vector<Point> > contours_poly( contours.size() );
-		vector<Rect> boundRect( contours.size() );
-		vector<Point2f>center( contours.size() );
-		vector<float>radius( contours.size() );
+			/// Approximate contours to polygons + get bounding rects and circles
+			vector<vector<Point> > contours_poly( contours.size() );
+			vector<Rect> boundRect( contours.size() );
+			vector<Point2f>center( contours.size() );
+			vector<float>radius( contours.size() );
 
-		Rect bestBoundRect;
-		vector<Point> betContourPoly;
-		int best_index;
-		for( int i = 0; i < contours.size(); i++ )
-		{
-			approxPolyDP( Mat(contours[i]), contours_poly[i], 1, true );
-			boundRect[i] = boundingRect( Mat(contours_poly[i]) );
-			if(boundRect[i].area() > bestBoundRect.area())  {
-				bestBoundRect = boundRect[i];
-				betContourPoly = contours_poly[i];
-				best_index = i;
+			Rect bestBoundRect;
+			vector<Point> betContourPoly;
+			int best_index;
+			for( int i = 0; i < contours.size(); i++ )
+			{
+				approxPolyDP( Mat(contours[i]), contours_poly[i], 1, true );
+				boundRect[i] = boundingRect( Mat(contours_poly[i]) );
+				if(boundRect[i].area() > bestBoundRect.area())  {
+					bestBoundRect = boundRect[i];
+					betContourPoly = contours_poly[i];
+					best_index = i;
+				}
+			}
+
+			bestBoundRect.x -= bestBoundRect.width * 0.1;
+			bestBoundRect.x = std::max(bestBoundRect.x, 0);
+			bestBoundRect.width *= 1.2;
+			bestBoundRect.width = std::min(predict_s.cols - bestBoundRect.x, bestBoundRect.width);
+
+			bestBoundRect.y -= bestBoundRect.height * 0.1;
+			bestBoundRect.y = std::max(bestBoundRect.y, 0);
+			bestBoundRect.height *= 1.2;
+			bestBoundRect.height = std::min(predict_s.rows - bestBoundRect.y, bestBoundRect.height);
+
+			if(g_setting.output_prediction)
+			{
+				Scalar WHITE = Scalar( 255, 255, 255 );
+				Scalar BLACK = Scalar( 0, 0, 0 );
+
+				// ===================================================
+				// drawing
+				// ===================================================
+				Mat drawing = predict_s.clone();
+
+				rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
+				drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
+
+				imwrite(filename + ".predict.png", drawing);
+				imwrite(filename + ".predict-raw.png", predict);
+
+				cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
+			}
+
+			Mat result;
+			double cost = grabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
+
+			Mat output = MatHelper::resize(result, ori.cols, ori.rows);
+			medianBlur(output, output, 7);
+
+			cv::threshold(output, output, 128, 255, CV_THRESH_BINARY);
+
+
+			string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
+			imwrite(output_profile_name, output);
+
+			cerr<<"- Time = "<<cost<<" ms"<<" | Result saved to "<<output_profile_name<<endl;
+
+			if(g_setting.enable_evaluation) {
+				evaluate(output_profile_name, profile_filename);
 			}
 		}
-
-		if(g_setting.output_prediction)
-		{
-			Scalar WHITE = Scalar( 255, 255, 255 );
-			Scalar BLACK = Scalar( 0, 0, 0 );
-
-			// ===================================================
-			// drawing
-			// ===================================================
-			Mat drawing = predict_s.clone();
-
-			rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
-			drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
-
-			imwrite(filename + ".predict.png", drawing);
-			imwrite(filename + ".predict-raw.png", predict);
-
-			cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
-		}
-
-		Mat result;
-		double cost = grabCut(gc, ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
-
-		Mat output = MatHelper::resize(result, ori.cols, ori.rows);
-		medianBlur(output, output, 7);
-
-		cv::threshold(output, output, 128, 255, CV_THRESH_BINARY);
-
-
-		string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
-		imwrite(output_profile_name, output);
-
-		cerr<<"- Time = "<<cost<<" ms"<<" | Result saved to "<<output_profile_name<<endl;
-
-		if(g_setting.enable_evaluation) {
-			evaluate(output_profile_name, profile_filename);
+		catch(int e) {
+			//
 		}
 	}
 
@@ -751,9 +766,9 @@ double grabCut(GrabCut* gc, const Mat& ori, const Mat& min, const Mat& trimap, c
 			}
 		}
 
-	cv::cvtColor(min, input, CV_BGR2Lab);
+	cv::cvtColor(min, min, CV_BGR2XYZ);
 
-	cv::grabCut(input, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
+	cv::grabCut(min, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
 
 	Mat seg = Mat(min.size(), CV_8UC1);
 	seg = 255;

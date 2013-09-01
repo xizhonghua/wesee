@@ -23,7 +23,7 @@ Build:
 	just type make, should be compiled on mac & linux with g++ 4.7
 
 Libs Used: 
-	OpenGL/GLUT and OpenCV
+	OpenCV 2.4.6
 
 Running the test:
 	./matting input_folder

@@ -44,15 +44,6 @@ else
 endif
 
 #--------------------------------------------------------------------
-# OpenGL
-#--------------------------------------------------------------------
-ifeq ($(PLATFORM),MAC_OS_X)
-	GL_LIB = -framework OpenGL -framework GLUT -framework Foundation
-else 
-    GL_LIB = -lglut -lGLU -lGL -lm
-endif
-
-#--------------------------------------------------------------------
 # OpenCV
 #--------------------------------------------------------------------
 CV_LIB_BASE = -lopencv_core -lopencv_highgui -lopencv_imgproc
@@ -75,8 +66,8 @@ MT_SUB_DIRS = $(SRC_DIR) \
 MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 
 #--------------------------------------------------------------------
-INCLUDE = -I. $(MT_INCL) $(CV_INCL) $(GL_INCL)
-LIB = -lm $(GL_LIB) $(CV_LIB) $(GL_LIB)
+INCLUDE = -I. $(MT_INCL) $(CV_INCL)
+LIB = -lm $(CV_LIB)
 
 #--------------------------------------------------------------------
 

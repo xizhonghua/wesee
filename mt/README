@@ -10,8 +10,14 @@ Team members:
 	Guilin Liu : liuguilin1225@gmail.com
 	Zhonghua Xi : xizhonghua@gmail.com
 
+Files:
+	src/		- source folder
+	Makefile	- makefile
+	train.bin	- training db
+	README		- this file
+
 Basic intro:
-	Use learned trimap as input and graphcut to get the segmentation
+	Using training results (stored in train.bin) to predict a trimap as input and use graphcut to get the segmentation.
 
 Build: 
 	just type make, should be compiled on mac & linux with g++ 4.7
@@ -20,30 +26,5 @@ Libs Used:
 	OpenGL/GLUT and OpenCV
 
 Running the test:
-	./matting -op -g -m filename.jpg
+	./matting input_folder
 	# will output the profile to filename-profile.png which is a single channel image in png format with foreground in white(0xFF), background in black(0x00).
-
-Usage: ./matting [Options]
-	options:
-	[-g]: no gui
-	[-e]: enable evaluation, will NOT save result to file
-	[-m filename]: mat single image
-	[-mr iterations]: max refine iterations
-	[-t filename]: train single image
-	[-ev profile ground_truth]: evaluation profile with ground_truth
-	[-ta input_dir]: train entire directory
-	[-op]: output profile, should use with [-m]
-	[-resize filename [long_edge=360]]: resize the image
-	[input_dir]: mat entire directory
-	[-h]: show this message
-
-Other examples:
-	./matting -e -m test/00037.jpg
-	#mat single image and evaluate with ground truth
-	
-	./matting -t training/000301.jpg
-	#train single image
-	
-	./matting -ta training
-	#train all images in "training" folder
-	

@@ -1,4 +1,5 @@
 #!/bin/bash
 target="2-WESEE.zip"
+db="train.bin"
 rm $target
-zip -r $target src Makefile README -x "*/.*" "*.o"
+zip -r $target src $db Makefile README -x "*/.*" "*.o"

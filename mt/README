@@ -5,26 +5,26 @@ Problem:
 	matting
 
 Team members:
-	Xing Zhou(leader) : xzhou10@gmu.edu
-	Shenhui Zhou : szhou5@gmu.edu
-	Guilin Liu : liuguilin1225@gmail.com
-	Zhonghua Xi : xizhonghua@gmail.com
+	Xing Zhou(Leader)       zhouxingapply@gmail.com
+	Shenhui Zhou            szhou5@gmu.edu
+	Guilin Liu              liuguilin1225@gmail.com
+	Zhonghua Xi             xizhonghua@gmail.com
 
 Files:
-	src/		- source folder
-	Makefile	- makefile
-	train.bin	- training db
-	README		- this file
+	src/                    - source folder
+	Makefile                - makefile
+	train.bin               - training db
+	README                  - this file
 
 Basic intro:
 	Using training results (stored in train.bin) to predict a trimap as input and use graphcut to get the segmentation.
 
-Build: 
-	just type make, should be compiled on mac & linux with g++ 4.7
+Build:
+	just type make, should be compiled on mac & linux with g++ 4.7.3
 
-Libs Used: 
+Libs Used:
 	OpenCV 2.4.6
 
 Running the test:
 	./matting input_folder
-	# will output the profile to filename-profile.png which is a single channel image in png format with foreground in white(0xFF), background in black(0x00).
+	# will output the profile to input_folder/filename-profile.png which is a single channel image in png format with foreground in white(0xFF), background in black(0x00).

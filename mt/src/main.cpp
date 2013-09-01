@@ -463,8 +463,8 @@ void salient(const string& salient_path, const string& input_path){
 
 	Mat salient = imread(salient_path, IMREAD_UNCHANGED);
 	Mat input = imread(input_path);
-	cerr<<"salient file:"<<salient_path<<" size = "<<salient.size()<<endl;
-	cerr<<"input_path:"<<input_path<<" size = "<<input.size()<<endl;
+	//cerr<<"salient file:"<<salient_path<<" size = "<<salient.size()<<endl;
+	//cerr<<"input_path:"<<input_path<<" size = "<<input.size()<<endl;
 	int org_width = input.cols;
 	int org_height = input.rows;
 	input = MatHelper::resize(input, salient.cols, salient.rows);

@@ -71,8 +71,6 @@ endif
 
 MT_SUB_DIRS = $(SRC_DIR) \
 			$(SRC_DIR)/utils \
-			$(SRC_DIR)/graphcut \
-			$(SRC_DIR)/graphcut/graph \
 
 MT_INCL=$(addprefix -I,$(MT_SUB_DIRS))
 

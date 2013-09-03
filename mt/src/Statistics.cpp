@@ -10,9 +10,9 @@
 Statistics::Statistics() {
 
 	this->m_channels.resize(3);
-	this->m_rblocks = 24;
-	this->m_gblocks = 24;
-	this->m_bblocks = 24;
+	this->m_rblocks = 32;
+	this->m_gblocks = 32;
+	this->m_bblocks = 32;
 	this->m_xblocks = 24;
 	this->m_yblocks = 24;
 	//this->m_ablocks = 3;

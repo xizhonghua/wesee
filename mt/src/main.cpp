@@ -221,6 +221,8 @@ void run_batch(const string& input_dir)
 
 	cerr<<"- "<<files.size()<<" job(s) got"<<endl;
 
+	int jobid = 0;
+
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
 		try {
@@ -228,7 +230,7 @@ void run_batch(const string& input_dir)
 			const string profile_filename = get_profile_name(filename);
 			string output_filename = get_profile_name(*it);
 
-			cerr<<"- Matting " + filename + "..."<<endl;
+			cerr<<"["<<++jobid<<"/"<<files.size()<<"] [Matting] " + filename + "..."<<endl;
 
 			Mat ori = imread(filename);
 
@@ -280,14 +282,14 @@ void run_batch(const string& input_dir)
 				}
 			}
 
-			bestBoundRect.x -= bestBoundRect.width * 0.1;
+			bestBoundRect.x -= bestBoundRect.width * 0.15;
 			bestBoundRect.x = std::max(bestBoundRect.x, 0);
-			bestBoundRect.width *= 1.2;
+			bestBoundRect.width *= 1.3;
 			bestBoundRect.width = std::min(predict_s.cols - bestBoundRect.x, bestBoundRect.width);
 
-			bestBoundRect.y -= bestBoundRect.height * 0.1;
+			bestBoundRect.y -= bestBoundRect.height * 0.15;
 			bestBoundRect.y = std::max(bestBoundRect.y, 0);
-			bestBoundRect.height *= 1.2;
+			bestBoundRect.height *= 1.3;
 			bestBoundRect.height = std::min(predict_s.rows - bestBoundRect.y, bestBoundRect.height);
 
 			if(g_setting.output_prediction)
@@ -353,6 +355,7 @@ void train_batch(const string& input_dir)
 		const string& filename = input_dir + "/" + *it;
 		string training_filename = get_profile_name(filename);
 
+		cerr<<"["<<trained<<"/"<<(g_setting.max_training_images == 0 ? files.size() : g_setting.max_training_images)<<"] ";
 		trained += training(stat, filename, training_filename, pixel_count);
 
 		if(g_setting.max_training_images != 0 && g_setting.max_training_images <= trained) break;

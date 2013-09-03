@@ -63,8 +63,8 @@ double Matting::evaluate(const Mat& ground_truth, const Mat& result){
 		    {
 		    	unsigned char r_g = g.at<unsigned char>(i,j);
 		    	unsigned char r_r = r.at<unsigned char>(i,j);
-		    	if(r_g == 255 && r_r == 255) inter_count++;
-		    	if(r_g == 255 || r_r == 255) union_count++;
+		    	if(r_g == 255 && r_r == 0) inter_count++;
+		    	if(r_g == 255 || r_r == 0) union_count++;
 		    }
 
 	if(union_count == 0) return 0.0;

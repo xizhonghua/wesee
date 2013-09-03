@@ -319,6 +319,7 @@ void run_batch(const string& input_dir)
 
 			cv::threshold(output, output, 128, 255, CV_THRESH_BINARY);
 
+			output = 255 - output;
 
 			string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
 			imwrite(output_profile_name, output);

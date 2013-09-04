@@ -91,7 +91,7 @@ double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const
 
 int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predit_drawing) {
 
-	const int THRSH_FOR_EDGES = 70;
+	const int THRSH_FOR_EDGES = 80;
 	const int MAX_THRESH_FOR_EDGES = 255;
 
 	Mat input = MatHelper::resize(ori, LONG_EDGE_PX);

@@ -29,6 +29,9 @@ int Matting::train(const Mat& image, const Mat& profile){
 }
 
 double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output){
+
+	const int GRABCUT_COLOR_SPACE = CV_BGR2XYZ;
+
 	Timer t;
 	t.restart();
 
@@ -70,7 +73,7 @@ double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const
 			}
 		}
 
-	cv::cvtColor(min, min, CV_BGR2XYZ);
+	cv::cvtColor(min, min, GRABCUT_COLOR_SPACE);
 
 	cv::grabCut(min, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
 
@@ -87,7 +90,9 @@ double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const
 }
 
 int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predit_drawing) {
-	// TODO implement matting algorithm
+
+	const int THRSH_FOR_EDGES = 70;
+	const int MAX_THRESH_FOR_EDGES = 255;
 
 	Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
 	predict_raw = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
@@ -104,20 +109,14 @@ int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predi
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 
-	int thresh = 70;
-	int max_thresh = 255;
-	RNG rng(12345);
-
 	/// Detect edges using Threshold
-	threshold( predict_s, threshold_output, thresh, 255, THRESH_BINARY );
+	threshold( predict_s, threshold_output, THRSH_FOR_EDGES, MAX_THRESH_FOR_EDGES, THRESH_BINARY );
 	/// Find contours
 	findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
 	/// Approximate contours to polygons + get bounding rects and circles
 	vector<vector<Point> > contours_poly( contours.size() );
 	vector<Rect> boundRect( contours.size() );
-	vector<Point2f>center( contours.size() );
-	vector<float>radius( contours.size() );
 
 	Rect bestBoundRect;
 	vector<Point> betContourPoly;

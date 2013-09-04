@@ -24,7 +24,10 @@ public:
 		this->resize_mode = false;
 		this->evaluation_mode = false;
 
+		this->output_dir = "output";
+
 		this->training_database_filename = "train.bin";
+
 	}
 	string matting_filename;
 
@@ -45,6 +48,7 @@ public:
 	bool matting_mode;
 	int max_refine_iterations;
 
+	string output_dir;
 	bool output_profile;
 	bool output_prediction;
 

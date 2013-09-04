@@ -15,6 +15,7 @@ Files:
 	Makefile                - makefile
 	train.bin               - training db
 	README                  - this file
+	output/			- output folder
 
 Basic intro:
 	Using training results (stored in train.bin) to predict a trimap as input and use graphcut to get the segmentation.
@@ -27,4 +28,4 @@ Libs Used:
 
 Running the test:
 	./matting input_folder
-	# will output the profile to input_folder/filename-profile.png which is a single channel image in png format with foreground in white(0xFF), background in black(0x00).
+	# will output the profile to output/filename.jpg which is a single channel image in jpeg format with foreground in black(0x00), background in white(0xFF).

@@ -150,7 +150,10 @@ vector<string> get_files(const string& input_dir){
 	if (dpdf != NULL){
 	   while (epdf = readdir(dpdf)){
 		   string filename = string(epdf->d_name);
-		   if(filename.find(".jpg")!=filename.length() - 4)
+		   if(filename.find(".jpg")!=filename.length() - 4
+		   && filename.find(".JPG")!=filename.length() - 4
+		   && filename.find(".jpeg")!=filename.length() - 5
+		   && filename.find(".JPEG")!=filename.length() - 5)
 			   continue;
 		   if(filename.find("-profile") == std::string::npos)
 			   files.push_back(filename);
@@ -204,130 +207,62 @@ void run_batch(const string& input_dir)
 {
 
 	cerr<<"========================== WESEE ============================"<<endl;
-	cerr<<"- Batch starting"<<endl;
 
 	Statistics stat;
 
-	Timer t;
+	Timer tt;
 
 	if(stat.read_data(g_setting.training_database_filename)){
-		cerr<<"- Training data loaded from " << g_setting.training_database_filename <<" in "<<t.getElapsedMilliseconds()<<"ms"<<endl;
+		cerr<<"- Training data loaded from " << g_setting.training_database_filename <<" in "<<tt.getElapsedMilliseconds()<<"ms"<<endl;
 	}
 	else {
-		cerr<<"! Error ! Can't open training data."<<endl;
+		cerr<<"! Error ! Can't open training data : "<<g_setting.training_database_filename<<endl;
 		return;
 	}
+
+	cerr<<"- Batch started"<<endl;
+
 	vector<string> files = get_files(input_dir);
 
-	cerr<<"- "<<files.size()<<" job(s) got"<<endl;
+	cerr<<"- "<<files.size()<<" images(s) got"<<endl;
 
 	int jobid = 0;
 
 	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
 	{
+		Timer t;
+
 		try {
 			const string filename = input_dir + "/" + *it;
 			const string profile_filename = get_profile_name(filename);
-			string output_filename = get_profile_name(*it);
+			string output_filename = g_setting.output_dir + "/" + *it;
 
-			cerr<<"["<<++jobid<<"/"<<files.size()<<"] [Matting] " + filename + "..."<<endl;
+			cerr<<"["<<++jobid<<"/"<<files.size()<<"] [Matting] " + filename + "...";
 
 			Mat ori = imread(filename);
 
-			if(ori.type() != CV_8UC3) {
-				cerr<<"! Error ! unsupported data type = "<<ori.type()<<"!"<<endl;
+			if(!ori.data) {
+				cerr<<"! Error ! can't open or read image file "<<filename<<"!"<<endl;
 				continue;
 			}
-			Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
-			Mat predict = Mat::zeros(ori.rows, ori.cols, CV_8UC1);
 
-			stat.predict(ori, predict);
+			Mat output, predict_raw, predict_drawing;
 
-			Mat predict_s = MatHelper::resize(predict, LONG_EDGE_PX);
+			Matting::mat(stat, ori, output, predict_raw, predict_drawing);
 
-			//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
-			//blur( predict_s, predict_s, Size(11,11) );
-			medianBlur(predict_s, predict_s, 5);
+			imwrite(output_filename, output);
 
-			Mat threshold_output;
-			vector<vector<Point> > contours;
-			vector<Vec4i> hierarchy;
+			cerr<<" done Time = "<<t.getElapsedMilliseconds()<<" ms"<<" | Result saved to "<<output_filename<<endl;
 
-			int thresh = 70;
-			int max_thresh = 255;
-			RNG rng(12345);
-
-			/// Detect edges using Threshold
-			threshold( predict_s, threshold_output, thresh, 255, THRESH_BINARY );
-			/// Find contours
-			findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-
-			/// Approximate contours to polygons + get bounding rects and circles
-			vector<vector<Point> > contours_poly( contours.size() );
-			vector<Rect> boundRect( contours.size() );
-			vector<Point2f>center( contours.size() );
-			vector<float>radius( contours.size() );
-
-			Rect bestBoundRect;
-			vector<Point> betContourPoly;
-			int best_index;
-			for( int i = 0; i < contours.size(); i++ )
-			{
-				approxPolyDP( Mat(contours[i]), contours_poly[i], 1, true );
-				boundRect[i] = boundingRect( Mat(contours_poly[i]) );
-				if(boundRect[i].area() > bestBoundRect.area())  {
-					bestBoundRect = boundRect[i];
-					betContourPoly = contours_poly[i];
-					best_index = i;
-				}
-			}
-
-			bestBoundRect.x -= bestBoundRect.width * 0.15;
-			bestBoundRect.x = std::max(bestBoundRect.x, 0);
-			bestBoundRect.width *= 1.3;
-			bestBoundRect.width = std::min(predict_s.cols - bestBoundRect.x, bestBoundRect.width);
-
-			bestBoundRect.y -= bestBoundRect.height * 0.15;
-			bestBoundRect.y = std::max(bestBoundRect.y, 0);
-			bestBoundRect.height *= 1.3;
-			bestBoundRect.height = std::min(predict_s.rows - bestBoundRect.y, bestBoundRect.height);
-
-			if(g_setting.output_prediction)
-			{
-				Scalar WHITE = Scalar( 255, 255, 255 );
-				Scalar BLACK = Scalar( 0, 0, 0 );
-
-				// ===================================================
-				// drawing
-				// ===================================================
-				Mat drawing = predict_s.clone();
-
-				rectangle( drawing, bestBoundRect.tl(), bestBoundRect.br(), WHITE, 2, 8, 0 );
-				drawContours( drawing, contours_poly, best_index, WHITE, 1, 8, vector<Vec4i>(), 0, Point() );
-
-				imwrite(filename + ".predict.png", drawing);
-				imwrite(filename + ".predict-raw.png", predict);
+			if(g_setting.output_prediction){
+				imwrite(filename + ".predict.png", predict_drawing);
+				imwrite(filename + ".predict-raw.png", predict_raw);
 
 				cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
 			}
 
-			Mat result;
-			double cost = grabCut(ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
-
-			Mat output = MatHelper::resize(result, ori.cols, ori.rows);
-			medianBlur(output, output, 7);
-
-			cv::threshold(output, output, 128, 255, CV_THRESH_BINARY);
-
-			output = 255 - output;
-
-			string output_profile_name = profile_filename.substr(0, profile_filename.find_last_of(".")) + ".png";
-			imwrite(output_profile_name, output);
-
-			cerr<<"- Time = "<<cost<<" ms"<<" | Result saved to "<<output_profile_name<<endl;
-
 			if(g_setting.enable_evaluation) {
-				evaluate(output_profile_name, profile_filename);
+				evaluate(output_filename, profile_filename);
 			}
 		}
 		catch(int e) {
@@ -335,8 +270,8 @@ void run_batch(const string& input_dir)
 		}
 	}
 
-	cerr<<"- Batch done"<<endl;
-	cerr<<"========================== WESEE ============================"<<endl;
+	cerr<<"- Batch done "<<files.size()<<" image(s) processed!"<<endl;
+	cerr<<"- Total time : "<<tt.getElapsedMilliseconds()/1000<<"s"<<" Average time:"<<(files.size()==0?0:tt.getElapsedMilliseconds()/files.size())<<"ms"<<endl;
 }
 
 void train_batch(const string& input_dir)
@@ -404,63 +339,6 @@ void resize(const string& filename, const int long_edge){
 	printf("resized %s from %dx%d to %dx%d, output saved to %s\n", filename.c_str(), img.cols, img.rows, out.cols, out.rows, out_filename.c_str());
 }
 
-double grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output){
-	Timer t;
-	t.restart();
-
-	Mat input, mask;
-	mask.create(min.size(), CV_8UC1);
-	mask = cv::GC_BGD;
-
-	Mat bgdModel;
-	Mat fgdModel;
-
-	int width = min.cols;
-	int height = min.rows;
-
-	mask(boundRect) = cv::GC_PR_FGD;
-
-	for(int j=boundRect.x;j<boundRect.x + boundRect.width;j++)
-		for(int i=boundRect.y;i<boundRect.y + boundRect.height;i++)
-		{
-			int value = trimap.at<byte>(i,j);
-
-			double dist = cv::pointPolygonTest(contour, Point2i(j,i), true);
-
-			if(dist > 0){
-				// inside the contour
-				if(value >= 240){
-					mask.at<byte>(i,j) = cv::GC_FGD;
-				}
-				else if(value <= 12)
-				{
-					mask.at<byte>(i,j) = cv::GC_PR_BGD;
-				}
-			}
-			if(dist < 0)
-			{
-				if(value <= 12)
-					mask.at<byte>(i,j) = cv::GC_BGD;
-				else if(value <= 30)
-					mask.at<byte>(i,j) = cv::GC_PR_BGD;
-			}
-		}
-
-	cv::cvtColor(min, min, CV_BGR2XYZ);
-
-	cv::grabCut(min, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
-
-	Mat seg = Mat(min.size(), CV_8UC1);
-	seg = 255;
-
-	seg.copyTo(output, mask & 1);
-
-	double cost = t.getElapsedMilliseconds();
-
-	output = MatHelper::resize(output, ori.cols,  ori.rows);
-
-	return cost;
-}
 
 void salient(const string& salient_path, const string& input_path){
 

@@ -57,13 +57,13 @@ public:
 	Statistics();
 	virtual ~Statistics();
 	void stat(const Mat& image, const Mat& profile);
-	void predict(const Mat& image, Mat& trimap);
+	void predict(const Mat& image, Mat& trimap) const;
 	void save_data(const string& path);
 	bool read_data(const string& path);
 private:
 	int get_aspect_block(double aspect);
-	Vec6i get_index(int b_b, int g_b, int r_b, int x_b, int y_b, int a_b);
-	Vec5i get_index(int b_b, int g_b, int r_b, int x_b, int y_b);
+	Vec6i get_index(int b_b, int g_b, int r_b, int x_b, int y_b, int a_b) const;
+	Vec5i get_index(int b_b, int g_b, int r_b, int x_b, int y_b) const;
 	static void limit(int& value, int min, int max) { if(value > max) value = max; if(value<min) value = min;}
 
 	int m_xblocks;

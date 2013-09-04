@@ -167,16 +167,12 @@ void Statistics::stat(const Mat& image, const Mat& profile){
 		}
 }
 
-void Statistics::predict(const Mat& image, Mat& trimap){
+void Statistics::predict(const Mat& image, Mat& trimap) const{
 #define SQR(x) ((x)*(x))
 #define DISTSQR(x1,y1,x2,y2) ((SQR((x1)-(x2))+SQR((y1)-(y2))))
 
 	int width = image.cols;
 	int height = image.rows;
-
-	double aspect = (double)width/height;
-
-	int a_b = this->get_aspect_block(aspect);
 
 	byte G,B,R;
 
@@ -217,7 +213,7 @@ void Statistics::predict(const Mat& image, Mat& trimap){
 
 
 // ===========================================
-Vec<int,5> Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b)
+Vec<int,5> Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b) const
 {
 	Statistics::limit(b_b, 0, this->m_bblocks-1);
 	Statistics::limit(g_b, 0, this->m_gblocks-1);
@@ -227,7 +223,7 @@ Vec<int,5> Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b)
 
 	return Vec<int,5>(b_b,g_b,r_b,x_b,y_b);
 }
-Vec6i Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b, int a_b)
+Vec6i Statistics::get_index(int b_b, int g_b, int r_b, int x_b, int y_b, int a_b) const
 {
 	Statistics::limit(b_b, 0, this->m_bblocks-1);
 	Statistics::limit(g_b, 0, this->m_gblocks-1);

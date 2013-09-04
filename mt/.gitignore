@@ -4,6 +4,9 @@ data/
 test/
 training/
 output/*.jpg
+small_data/
+results/
+tmp/
 *.zip
 *.o
 .project

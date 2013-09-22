@@ -91,7 +91,7 @@ double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const
 
 int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predit_drawing) {
 
-	const int THRSH_FOR_EDGES = 80;
+	const int THRSH_FOR_EDGES = 60;
 	const int MAX_THRESH_FOR_EDGES = 255;
 
 	Mat input = MatHelper::resize(ori, LONG_EDGE_PX);
@@ -101,8 +101,6 @@ int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predi
 
 	Mat predict_s = MatHelper::resize(predict_raw, LONG_EDGE_PX);
 
-	//cv::fastNlMeansDenoising(predict_s, predict_s, 11);
-	//blur( predict_s, predict_s, Size(11,11) );
 	medianBlur(predict_s, predict_s, 5);
 
 	Mat threshold_output;

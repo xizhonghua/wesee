@@ -1,0 +1,73 @@
+;; -*- mode: emacs-lisp; coding: emacs-mule; -*-
+;; --------------------------------------------------------------------------
+;; Desktop File for Emacs
+;; --------------------------------------------------------------------------
+;; Created Wed Oct 31 13:59:46 2012
+;; Desktop file format version 206
+;; Emacs version 23.4.1
+
+;; Global section:
+(setq desktop-missing-file-warning nil)
+(setq tags-file-name nil)
+(setq tags-table-list nil)
+(setq search-ring nil)
+(setq regexp-search-ring nil)
+(setq register-alist nil)
+(setq file-name-history nil)
+
+;; Buffer section -- buffers listed in same order as in buffer list:
+(desktop-create-buffer 206
+  "/home/mano/fbcode/vision/poselets/TARGETS"
+  "TARGETS<3>"
+  'fundamental-mode
+  nil
+  1
+  '(nil nil)
+  nil
+  nil
+  '((buffer-file-coding-system . undecided-unix)))
+
+(desktop-create-buffer 206
+  "/home/mano/fbcode/vision/features/gist/TARGETS"
+  "TARGETS<2>"
+  'fundamental-mode
+  nil
+  1
+  '(nil nil)
+  nil
+  nil
+  '((buffer-file-coding-system . undecided-unix)))
+
+(desktop-create-buffer 206
+  "/home/mano/fbcode/vision/util/TARGETS"
+  "TARGETS"
+  'fundamental-mode
+  nil
+  1
+  '(nil nil)
+  nil
+  nil
+  '((buffer-file-coding-system . undecided-unix)))
+
+(desktop-create-buffer 206
+  "/home/mano/fbcode/vision/util/util.h"
+  "util.h"
+  'c-mode
+  '(abbrev-mode)
+  3130
+  '(15 nil)
+  nil
+  nil
+  '((buffer-file-coding-system . undecided-unix)))
+
+(desktop-create-buffer 206
+  "/home/mano/fbcode/vision/util/util.cpp"
+  "util.cpp"
+  'c++-mode
+  '(abbrev-mode)
+  3627
+  '(596 nil)
+  nil
+  nil
+  '((buffer-file-coding-system . undecided-unix)))
+

@@ -274,6 +274,78 @@ void run_batch(const string& input_dir)
 	cerr<<"- Total time : "<<tt.getElapsedMilliseconds()/1000<<"s"<<" Average time:"<<(files.size()==0?0:tt.getElapsedMilliseconds()/files.size())<<"ms"<<endl;
 }
 
+void run_batch(const string& input_dir)
+{
+
+	cerr<<"========================== WESEE ============================"<<endl;
+
+	//Statistics stat; 
+
+	Timer tt;
+
+	/*if(stat.read_data(g_setting.training_database_filename)){
+		cerr<<"- Training data loaded from " << g_setting.training_database_filename <<" in "<<tt.getElapsedMilliseconds()<<"ms"<<endl;
+	}
+	else {
+		cerr<<"! Error ! Can't open training data : "<<g_setting.training_database_filename<<endl;
+		return;
+	}*/
+
+	cerr<<"- Batch started"<<endl;
+
+	vector<string> files = get_files(input_dir);
+
+	cerr<<"- "<<files.size()<<" images(s) got"<<endl;
+
+	int jobid = 0;
+
+	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
+	{
+		Timer t;
+
+		try {
+			const string filename = input_dir + "/" + *it;
+			const string profile_filename = get_profile_name(filename);
+			string output_filename = g_setting.output_dir + "/" + *it;
+
+			cerr<<"["<<++jobid<<"/"<<files.size()<<"] [Matting] " + filename + "...";
+
+			Mat ori = imread(filename);
+
+			if(!ori.data) {
+				cerr<<"! Error ! can't open or read image file "<<filename<<"!"<<endl;
+				continue;
+			}
+
+			Mat output, predict_raw, predict_drawing;
+
+			Matting::mat(ori, , output, predict_raw, predict_drawing);
+
+			imwrite(output_filename, output);
+
+			cerr<<" done Time = "<<t.getElapsedMilliseconds()<<" ms"<<" | Result saved to "<<output_filename<<endl;
+
+			if(g_setting.output_prediction){
+				imwrite(filename + ".predict.png", predict_drawing);
+				imwrite(filename + ".predict-raw.png", predict_raw);
+
+				cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
+			}
+
+			if(g_setting.enable_evaluation) {
+				evaluate(output_filename, profile_filename);
+			}
+		}
+		catch(int e) {
+			//
+		}
+	}
+
+	cerr<<"- Batch done "<<files.size()<<" image(s) processed!"<<endl;
+	cerr<<"- Total time : "<<tt.getElapsedMilliseconds()/1000<<"s"<<" Average time:"<<(files.size()==0?0:tt.getElapsedMilliseconds()/files.size())<<"ms"<<endl;
+}
+
+
 void train_batch(const string& input_dir)
 {
 

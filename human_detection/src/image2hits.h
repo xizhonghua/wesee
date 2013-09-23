@@ -17,8 +17,6 @@ public:
     _hits.clear();
     generate_image_pyramid(v, target_dims(), *this);
     nonmax_suppress_hits(*_model, _hits, hits_out);
-    std::cerr << "Total hits: " << _hits.size()
-              << " after nonmax:" << hits_out.size() << std::endl;
   }
   const char* save_file() const { return NULL; }
 

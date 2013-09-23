@@ -42,8 +42,8 @@ void image2hits::hog2poselet_hits(const hog_features& hog,
       }
   }
   totaltime+=t.elapsed();
-  cerr << "Total num evals:" << count << " detected poselets:"
-       << hits.size() << " in " << totaltime << " sec." << endl;
+//  cerr << "Total num evals:" << count << " detected poselets:"
+//       << hits.size() << " in " << totaltime << " sec." << endl;
 }
 
 //#pragma optimize("",off)

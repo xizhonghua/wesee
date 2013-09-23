@@ -80,8 +80,8 @@ void poselet_detector::detect_objects(
   poselet_hits2objects(poselet_hits, object_hits, contrib_hits,
       cast_point<int_point>(v.dimensions()));
 
-  std::cerr << "Computed poselet hits in " << t.elapsed()
-            << " sec." << std::endl;
+//  std::cerr << "Computed poselet hits in " << t.elapsed()
+//            << " sec." << std::endl;
 
   std::sort(object_hits.begin(), object_hits.end());
 

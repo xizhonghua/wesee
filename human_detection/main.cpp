@@ -1,5 +1,22 @@
+#ifndef png_infopp_NULL
+    #define png_infopp_NULL (png_infopp)NULL
+#endif
+#ifndef int_p_NULL
+    #define int_p_NULL (int*)NULL
+#endif
+
+#include <dirent.h>
+#include <sys/types.h>
+
 #include <iostream>
 #include <vector>
+#include <stdio.h>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <map>
+using namespace std;
+
 #include <boost/gil/gil_all.hpp>
 #include <boost/gil/extension/io/jpeg_io.hpp>
 #include <boost/gil/extension/io/png_io.hpp>
@@ -10,21 +27,16 @@
 #include <boost/ref.hpp>
 
 #include "poselet_api.h"
-#include "gil_draw.h"
-#include <dirent.h>
+
 #include "config.h"
+#include "util/Timer.h"
 
-#include <sys/types.h>
 
-#include <stdio.h>
-#include <fstream>
-#include <sstream>
-#include <string>
-using namespace std;
+
 using namespace boost::gil;
 using namespace poselet_api;
 
-#include <map>
+
 
 enum img_format
 {
@@ -264,11 +276,14 @@ int main( int argc, char* argv[] ) {
 
 	for (size_t i=0; i<files.size(); i++)
 	{
-	  double score = human_detect(input_dir + "/" + files[i]);
-	  int value = score > threshold ? 1 : 0;
-	  fs << files[i] << " " << value << endl;
-	  if (output_score)
+		Timer t;
+		cerr << "Processing "<< files[i] << " ";
+		double score = human_detect(input_dir + "/" + files[i]);
+		int value = score > threshold ? 1 : 0;
+		fs << files[i] << " " << value << endl;
+		if (output_score)
 		  fscore << files[i] << " " << score << endl;
+		cerr << "label = " << value << " score = " << score << " "<< t.getElapsedMilliseconds() << "ms" <<endl;
 	}
 	fs.close();
 	fscore.close();

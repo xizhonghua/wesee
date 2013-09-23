@@ -1,25 +1,90 @@
-CC=g++
-OBJ = src/classifier.o src/config.o src/hog_features.o src/hypothesis.o src/image2hits.o src/model.o src/object_hypothesis.o src/poselet.o src/poselet_api.o src/poselet_cluster.o src/poselet_detector.o src/poselet_hit.o src/mat_imresize.o include/gil_draw.o main.o
 
+#-----------------------------------------------------------------------------
+# On Linux,    this should be 'Linux'
+# On Mac OS X, this should be 'MAC_OS_X'
+#-----------------------------------------------------------------------------
+
+PLATFORM := $(shell uname -s)
+MACHINE := $(shell uname -m)
+
+ifeq ($(PLATFORM),Linux)
+  ifeq ($(MACHINE),x86_64)
+    PLATFORM := LINUX64
+  else
+    PLATFORM := LINUX
+  endif
+else
+  ifeq ($(PLATFORM),Darwin)
+    PLATFORM := MAC_OS_X
+  else
+    PLATFORM := OTHER
+  endif
+endif
+
+
+#-----------------------------------------------------------------------------
+# Choose a compiler & its options
+#--------------------------------------------------------------------------
+
+CXX      = g++
+LINK     = g++
+
+OPTS = -ansi -MMD -Wall -O3 -Wno-deprecated  
+ifeq ($(PLATFORM),MAC_OS_X)
+ OPTS += -DMACOS
+endif
+
+#--------------------------------------------------------------------
+# image lib
+#--------------------------------------------------------------------
+
+ifeq ($(PLATFORM),MAC_OS_X)
+   IMG_LIB = -L/opt/local/lib -ljpeg -lpng
+else
+   IMG_LIB = -ljpeg -lpng
+endif
+
+#--------------------------------------------------------------------
+# boost
+#--------------------------------------------------------------------
 BOOST = boost_1_50_0
 
-CFLAGS  = -O3 -Wall -fPIC -msse4.2 #-fopenmp
-#CFLAGS  = -g -Wall -fPIC -msse4.2 #-fopenmp
-INCLUDES = -Isrc -Iinclude -Ithird_party/rapidxml-1.13 -I$(BOOST) -Ithird_party -Iutil
-TESTLDFLAGS = -Llib -ljpeg -lpng
-OUT = lib/libposelet.a
 
-SRC=$(OBJ:.o=.cpp)
+#--------------------------------------------------------------------
+# Put all together
+#--------------------------------------------------------------------
+TARGET  = hd
+SUBDIRS = . src include third_party/rapidxml-1.13 third_party util ${BOOST}
+INCLUDE = $(addprefix -I,$(SUBDIRS))
+SRCS=$(wildcard $(addsuffix /*.cpp,$(SUBDIRS)))
+OBJS=${SRCS:.cpp=.o}
+LIB = $(IMG_LIB) 
 
-$(OUT): $(OBJ)
-	ar rcs $(OUT) $(OBJ)
+CFLAGS   = $(OPTS) $(INCLUDE) 
+CXXFLAGS = $(CFLAGS) 
 
-%.o: %.cpp $(DEPS)
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
-	
+
 .PHONY: all
-all  : $(OUT)
-	$(CC) $(CFLAGS) $(INCLUDES) $(TESTLDFLAGS) main.cpp include/gil_imdebug.cpp -lposelet -ljpeg -lpng -o human_detect
+all :  $(TARGET)
+
+#--------------------------------------------------------------------
+
+#--------------------------------------------------------------------
+$(TARGET): $(OBJS)
+	${CXX} ${CXXFLAGS} -o $@ $(OBJS) $(LIB)
 
 clean:
-	rm -f $(OBJ) $(OUT)
+	-rm -f $(OBJS) $(TARGET) Dependencies
+
+#--------------------------------------------------------------------
+.SUFFIXES: .cpp
+
+.cpp.o:
+	${CXX} ${CXXFLAGS} -c $< -o $@
+	cat $*.d >> Dependencies
+	rm -f $*.d 
+
+Dependencies:
+	touch Dependencies
+
+include Dependencies

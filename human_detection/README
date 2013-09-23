@@ -1,33 +1,27 @@
+Team:
+    WEESEE
 
-This directory includes code for detecting people and objects and extracting attributes using poselets.
-See more about the poselets project here:
+Task:
+    Human Detection
 
-http://www.cs.berkeley.edu/~lbourdev/poselets
+Complie:
+    type make
+    tested on Mac OS X, and Ubuntu 12.10
 
-BUILD/RUN INSTRUCTIONS
+Usage:
+    ./hd input_folder
 
-The project is available on UNIX (gcc). There is a Matlab MEX file provided as well.
+Output:
+    result.txt
+    format:
+        filename1 label1
+        filename2 label2
+        ...
+        filenameN labelN
 
-1. Download the Boost libraries from www.boost.com. You do not need to compile them for this project.
-2. If needed, install the JPEG library.
-3. If needed, install OpenMP.
-4. Modify the build file to provide the location of your boost and (if needed, Matlab) path and to remove -fopenmp if not using OpenMP.
-5. Build with "make test". This will compile a poselets lib and the test project
-6. Run the test file by specifying the classifier XML and the image file. For example:
-  poselets_test/poselets_test data/categories/person.xml poselets_test/test_image.jpg
-This should load an image, run poselets and report the number of detected people. On Windows, you can enable drawing the test image and bounding boxes by changing poselets_test/main.cpp
+Library required:
+    libjpeg, libpng
 
-BUILDING MEX FILES
-
-To build a MEX file, uncomment the MATLAB location from inside the Makefile and do the following commands:
-
-make clean
-make test
-make
-
-The mex file should appear in the root directory.
-Run it without arguments from Matlab to see help on how to use it
-
-QUESTIONS?
-
-Please email lubomir@fb.com
+Contact:
+    Xing Zhou ( zhouxingapply@gmail.com )
+    Zhonghua Xi ( xizhonghua@gmail.com )

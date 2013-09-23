@@ -151,8 +151,8 @@ int get_image_format(char* header)
 
 void initial_config(){
 	const config& c = config::get();
-	c.PYRAMID_SCALE_RATIO = 1.2;
-	threshold = 2.5;
+	c.PYRAMID_SCALE_RATIO = 1.5;
+	threshold = 1.8;
 }
 
 bool parse_arg(int argc, char** argv){

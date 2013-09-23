@@ -4,15 +4,15 @@ Team:
 Task:
     Human Detection
 
-Complie:
+Compile:
     type make
-    tested on Mac OS X, and Ubuntu 12.10
+    tested on Mac OS X, and Ubuntu 12.04 with g++ 4.7.3
 
 Usage:
     ./hd input_folder
 
 Output:
-    result.txt
+    result will be outputted to result.txt
     format:
         filename1 label1
         filename2 label2

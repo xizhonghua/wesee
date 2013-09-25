@@ -238,6 +238,7 @@ double human_detect(const string& img_path)
 
 		  if (object_hits.size()>0)
 		  {
+			  cout <<"- obj size = " << object_hits[0].width << "*" << object_hits[0].height<<endl;
 			  return object_hits[0].score;
 		  }
 		  else

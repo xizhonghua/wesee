@@ -206,7 +206,7 @@ bool parse_arg(int argc, char** argv){
 	return true;
 }
 
-double human_detect(const string& img_path)
+double human_detect(const string& img_path, double& percent)
 {
 	try{
 		  bgr8_image_t img;
@@ -238,11 +238,12 @@ double human_detect(const string& img_path)
 
 		  if (object_hits.size()>0)
 		  {
-			  cout <<"- obj size = " << object_hits[0].width << "*" << object_hits[0].height<<endl;
+			  percent = (object_hits[0].width * object_hits[0].height * 1.0 / img.width() / img.height());
 			  return object_hits[0].score;
 		  }
 		  else
 		  {
+			  percent = 0;
 			  return 0;
 		  }
 	  }
@@ -304,12 +305,13 @@ int main( int argc, char* argv[] ) {
 			continue;
 		}
 		cerr << "Processing "<< files[i] << " ";
-		double score = human_detect(input_dir + "/" + files[i]);
+		double percent = 0;
+		double score = human_detect(input_dir + "/" + files[i], percent);
 		int value = score > threshold ? 1 : 0;
 		fs << files[i] << " " << value << endl;
 		if (output_score)
 		  fscore << files[i] << " " << score << endl;
-		cerr << "label = " << value << " score = " << score << " "<< t.getElapsedMilliseconds() << "ms" <<endl;
+		cerr << "label = " << value << " score = " << score << " percent = " << percent <<" time = "<< t.getElapsedMilliseconds() << "ms" <<endl;
 	}
 	fs.close();
 	fscore.close();

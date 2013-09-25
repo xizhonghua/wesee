@@ -15,6 +15,7 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include <set>
 using namespace std;
 
 #include <boost/gil/gil_all.hpp>
@@ -54,6 +55,9 @@ string modelname = "person";
 bool output_score = false;
 string output_name = "result.txt";
 string score_name = "score.txt";
+bool test_mode = false;
+string test_filename;
+set<string> file_to_test;
 
 template <typename Value>
 void append_hit(const Value& oh, vector<Value>& hits) {
@@ -190,6 +194,10 @@ bool parse_arg(int argc, char** argv){
 				return false;
 			}
 		}
+		else if(arg == "-if") {
+			test_mode = true;
+			test_filename = argv[++i];
+		}
 		else{
 			input_dir = arg;
 		}
@@ -247,7 +255,18 @@ double human_detect(const string& img_path)
 		  cout << "unkown exception" << endl;
 		  return 0;
 	  }
+
 	  return 0;
+}
+
+void load_test_files() {
+	ifstream fs(test_filename.c_str());
+	string test_file;
+	while(fs>>test_file) {
+		file_to_test.insert(test_file);
+	}
+
+	cout<<file_to_test.size()<<" files to test"<<endl;
 }
 
 int main( int argc, char* argv[] ) {
@@ -260,6 +279,8 @@ int main( int argc, char* argv[] ) {
 	}
 
 	vector<string> files = get_files(input_dir);
+
+	if(test_mode) load_test_files();
 
 	InitDetector(".", modelname.c_str(), true);
 
@@ -277,6 +298,10 @@ int main( int argc, char* argv[] ) {
 	for (size_t i=0; i<files.size(); i++)
 	{
 		Timer t;
+		if(test_mode && file_to_test.count(files[i])==0) {
+			//cout<<"[TEST MODE] skip "<<files[i]<<endl;
+			continue;
+		}
 		cerr << "Processing "<< files[i] << " ";
 		double score = human_detect(input_dir + "/" + files[i]);
 		int value = score > threshold ? 1 : 0;

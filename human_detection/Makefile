@@ -29,7 +29,7 @@ endif
 CXX      = g++
 LINK     = g++
 
-OPTS = -ansi -MMD -Wall -O3 -Wno-deprecated  
+OPTS = -pipe -ansi -MMD -Wall -O3 -Wno-deprecated  
 ifeq ($(PLATFORM),MAC_OS_X)
  OPTS += -DMACOS
 endif

@@ -4,7 +4,7 @@
 #include <boost/lexical_cast.hpp>
 
 config::config()
-: IMAGE_MARGIN(64*2,96*2),
+: IMAGE_MARGIN(64,96),
     HYPOTHESIS_PRIOR_VAR(1), HYPOTHESIS_PRIOR_VARIANCE_WEIGHT(1),
     POSELET_CLUSTER_HITS2CHECK(5), HYP_CLUSTER_MAXIMUM(100),
     TORSO_ASPECT_RATIO(1.5),
@@ -13,7 +13,7 @@ config::config()
     CLUSTER_THRESH(5),
     RAND_GRANULARITY(100000),
     //TORSO_SIZE(64, 96),
-    TORSO_SIZE(64*2, 96*2),
+    TORSO_SIZE(64, 96),
     TORSO_STEP(16, 24)
 {
   setToFast(true);

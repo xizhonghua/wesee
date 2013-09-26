@@ -58,6 +58,7 @@ string score_name = "score.txt";
 bool test_mode = false;
 string test_filename;
 set<string> file_to_test;
+double min_percent;
 
 template <typename Value>
 void append_hit(const Value& oh, vector<Value>& hits) {
@@ -156,7 +157,8 @@ int get_image_format(char* header)
 void initial_config(){
 	const config& c = config::get();
 	c.PYRAMID_SCALE_RATIO = 1.5;
-	threshold = 1.8;
+	threshold = 2.0;
+	min_percent = 0.03;
 }
 
 bool parse_arg(int argc, char** argv){
@@ -308,6 +310,7 @@ int main( int argc, char* argv[] ) {
 		double percent = 0;
 		double score = human_detect(input_dir + "/" + files[i], percent);
 		int value = score > threshold ? 1 : 0;
+		if(percent < min_percent) value = 0;
 		fs << files[i] << " " << value << endl;
 		if (output_score)
 		  fscore << files[i] << " " << score << endl;

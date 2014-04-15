@@ -25,8 +25,8 @@ public:
 	// ================================================
 	// static method
 	// ================================================
-	static int mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predict_result);
-	static double grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output);
+	static int mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predict_result, Mat& grab_mask);
+	static double grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output_mask, Mat& output);
 	static void dump_training_results();
 	static double evaluate(const Mat& ground_truth, const Mat& result);
 };

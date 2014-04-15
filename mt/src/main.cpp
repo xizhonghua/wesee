@@ -148,15 +148,22 @@ vector<string> get_files(const string& input_dir){
 
 	dpdf = opendir(input_dir.c_str());
 	if (dpdf != NULL){
-	   while (epdf = readdir(dpdf)){
+	   while ((epdf = readdir(dpdf))){
 		   string filename = string(epdf->d_name);
 		   if(filename.find(".jpg")!=filename.length() - 4
 		   && filename.find(".JPG")!=filename.length() - 4
 		   && filename.find(".jpeg")!=filename.length() - 5
 		   && filename.find(".JPEG")!=filename.length() - 5)
 			   continue;
-		   if(filename.find("-profile") == std::string::npos)
-			   files.push_back(filename);
+
+		   // ingore -profile
+		   if(filename.find("-profile") != std::string::npos)
+			   continue;
+		   // ingore output result
+		   if(filename.find("_c") != std::string::npos)
+			   continue;
+
+		   files.push_back(filename);
 	   }
 	}
 	return files;
@@ -228,14 +235,16 @@ void run_batch(const string& input_dir)
 
 	int jobid = 0;
 
-	for(vector<string>::const_iterator it = files.begin(); it != files.end(); ++ it)
+	for(const auto path : files)
 	{
 		Timer t;
 
 		try {
-			const string filename = input_dir + "/" + *it;
+			const string filename = input_dir + "/" + path;
+			const string id = filename.substr(0, filename.length() - 4);
 			const string profile_filename = get_profile_name(filename);
-			string output_filename = g_setting.output_dir + "/" + *it;
+			string output_filename = g_setting.output_dir + "/" + path;
+			string output_color_filename = id + "_c.jpg";
 
 			cerr<<"["<<++jobid<<"/"<<files.size()<<"] [Matting] " + filename + "...";
 
@@ -246,23 +255,29 @@ void run_batch(const string& input_dir)
 				continue;
 			}
 
-			Mat output, predict_raw, predict_drawing;
+			Mat output, predict_raw, predict_drawing, output_color, grab_mask;
 
-			Matting::mat(stat, ori, output, predict_raw, predict_drawing);
+			Matting::mat(stat, ori, output, predict_raw, predict_drawing, grab_mask);
+
+			ori.copyTo(output_color, 255 - output);
 
 			imwrite(output_filename, output);
+			imwrite(output_color_filename, output_color);
+
 
 			cerr<<" done Time = "<<t.getElapsedMilliseconds()<<" ms"<<" | Result saved to "<<output_filename<<endl;
 
 			if(g_setting.output_prediction){
-				imwrite(filename + ".predict.png", predict_drawing);
-				imwrite(filename + ".predict-raw.png", predict_raw);
+				imwrite(id + ".predict.png", predict_drawing);
+				imwrite(id + ".predict-raw.png", predict_raw);
+				imwrite(id + ".mask.png", grab_mask);
 
-				cerr<<"- Prediction file saved to " + filename + ".predict.png"<<endl;
+				cerr<<"- Prediction file saved to " + id + ".predict.png"<<endl;
 			}
 
 			if(g_setting.enable_evaluation) {
-				evaluate(output_filename, profile_filename);
+				double score = evaluate(output_filename, profile_filename);
+				g_setting.total_score += score;
 			}
 		}
 		catch(int e) {
@@ -272,6 +287,11 @@ void run_batch(const string& input_dir)
 
 	cerr<<"- Batch done "<<files.size()<<" image(s) processed!"<<endl;
 	cerr<<"- Total time : "<<tt.getElapsedMilliseconds()/1000<<"s"<<" Average time:"<<(files.size()==0?0:tt.getElapsedMilliseconds()/files.size())<<"ms"<<endl;
+
+	if(g_setting.enable_evaluation && files.size() > 0)
+	{
+		cerr<<"- Average score : "<<g_setting.total_score / files.size()<<endl;
+	}
 }
 
 
@@ -306,7 +326,7 @@ void train_batch(const string& input_dir)
 	cout<<trained<<" images with "<< pixel_count <<" pixels trained in "<<training_cost<<"ms"<<endl;
 }
 
-void evaluate(const string& profile, const string& ground_truth){
+double evaluate(const string& profile, const string& ground_truth){
 	Mat p = cv::imread(profile, cv::IMREAD_UNCHANGED);
 	Mat g = cv::imread(ground_truth, cv::IMREAD_UNCHANGED);
 	vector<Mat> ch;
@@ -322,6 +342,7 @@ void evaluate(const string& profile, const string& ground_truth){
 	Matting m;
 	double score = m.evaluate(g, p);
 	printf("- Score = %.4lf | Profile = %s | Ground_truth = %s\n", score, profile.c_str(), ground_truth.c_str());
+	return score;
 }
 
 void resize(const string& filename, const int long_edge){

@@ -28,7 +28,7 @@ int Matting::train(const Mat& image, const Mat& profile){
 	return 0;
 }
 
-double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour, Mat& output){
+double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const Rect& boundRect, const vector<Point>& contour,  Mat& output_mask, Mat& output){
 
 	const int GRABCUT_COLOR_SPACE = CV_BGR2XYZ;
 
@@ -68,12 +68,22 @@ double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const
 			{
 				if(value <= 12)
 					mask.at<byte>(i,j) = cv::GC_BGD;
-				else if(value <= 30)
+				else if(value <= 64)
 					mask.at<byte>(i,j) = cv::GC_PR_BGD;
 			}
 		}
 
 	cv::cvtColor(min, min, GRABCUT_COLOR_SPACE);
+
+	output_mask = mask.clone();
+
+	static int replace[4] = {0,3,1,2};
+
+	for (int i = 0; i < output_mask.cols; i++ )
+		for (int j = 0; j < output_mask.rows; j++)
+			output_mask.at<uchar>(j, i) = replace[output_mask.at<uchar>(j, i)];
+
+	output_mask*=85;
 
 	cv::grabCut(min, mask, boundRect, bgdModel, fgdModel, g_setting.max_refine_iterations, cv::GC_INIT_WITH_MASK);
 
@@ -89,7 +99,7 @@ double Matting::grabCut(const Mat& ori, const Mat& min, const Mat& trimap, const
 	return cost;
 }
 
-int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predit_drawing) {
+int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predict_raw, Mat& predit_drawing, Mat& grab_mask) {
 
 	const int THRSH_FOR_EDGES = 60;
 	const int MAX_THRESH_FOR_EDGES = 255;
@@ -153,7 +163,7 @@ int Matting::mat(const Statistics& stat, const Mat& ori, Mat& output, Mat& predi
 	}
 
 	Mat result;
-	double cost = grabCut(ori, input, predict_s, bestBoundRect, contours_poly[best_index], result);
+	double cost = grabCut(ori, input, predict_s, bestBoundRect, contours_poly[best_index], grab_mask, result);
 
 	output = MatHelper::resize(result, ori.cols, ori.rows);
 	medianBlur(output, output, 7);

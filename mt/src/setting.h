@@ -28,6 +28,8 @@ public:
 
 		this->training_database_filename = "train.bin";
 
+		this->total_score = 0.0;
+
 	}
 	string matting_filename;
 
@@ -37,6 +39,7 @@ public:
 
 	bool enable_gui;
 	bool enable_evaluation;
+
 
 	bool training_mode;
 	bool training_batch_mode;
@@ -63,6 +66,8 @@ public:
 	bool test_mode;
 	string test_filename;
 	string test_profilename;
+
+	double total_score;
 };
 
 #endif /*  __SETTING_H__ */

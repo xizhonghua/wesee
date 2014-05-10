@@ -1,7 +1,6 @@
 /*
  * main.cpp
  *
- *  Created on: Aug 17, 2013
  *      Author: zhonghua
  */
 #include "main.h"
@@ -120,17 +119,18 @@ bool parse_arg(int argc, char** argv){
 void print_usage(int argc, char** argv){
 	cout<<"usage: "<<argv[0]<<" [Options]"<<endl;
 	cout<<"examples:"<<endl;
-	cout<<"\t"<<argv[0]<<" -e -m 001.jpg "<<"# matting & evaluating 001.jpg with 001-profile.jpg"<<endl;
+	cout<<"\t"<<argv[0]<<" test"<<"          	# matting all images under 'test' folder"<<endl;
+	cout<<"\t"<<argv[0]<<" -e -m 001.jpg "<<"	# matting & evaluating 001.jpg with 001-profile.jpg"<<endl;
 	cout<<endl;
 	cout<<"options:"<<endl;
-	cout<<"\t[-g]: no gui"<<endl;
+	cout<<"\t[-g]: disable GUI"<<endl;
 	cout<<"\t[-e]: enable evaluation, will NOT save result to file"<<endl;
 	cout<<"\t[-m filename]: mat single image"<<endl;
 	cout<<"\t[-mr iterations]: max refine iterations"<<endl;
 	cout<<"\t[-ev profile ground_truth]: evaluation profile with ground_truth"<<endl;
 	cout<<"\t[-ta input_dir]: train entire directory"<<endl;
 	cout<<"\t[-td filename]: use custom training database"<<endl;
-	cout<<"\t[-op]: output predition map"<<endl;
+	cout<<"\t[-op]: output prediction map"<<endl;
 	cout<<"\t[-resize filename [long_edge=360]]: resize the image"<<endl;
 	cout<<"\t[input_dir]: mat entire directory"<<endl;
 	cout<<"\t[-h]: show this message"<<endl;

@@ -1,7 +1,6 @@
 /*
  * Matting.h
  *
- *  Created on: Aug 17, 2013
  *      Author: zhonghua
  */
 

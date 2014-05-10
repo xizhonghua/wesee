@@ -1,7 +1,6 @@
 /*
  * Timer.h
  *
- *  Created on: Aug 6, 2013
  *      Author: zhonghua
  */
 

@@ -1,7 +1,6 @@
 /*
  * MatHelper.h
  *
- *  Created on: Aug 24, 2013
  *      Author: zhonghua
  */
 

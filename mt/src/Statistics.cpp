@@ -1,7 +1,6 @@
 /*
  * Statistics.cpp
  *
- *  Created on: Aug 26, 2013
  *      Author: zhonghua
  */
 
